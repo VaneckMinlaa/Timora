@@ -1,0 +1,28 @@
+# Build stage
+FROM maven:3.9-eclipse-temurin-21-alpine AS builder
+
+WORKDIR /app
+
+# Copy the parent pom.xml
+COPY pom.xml .
+
+# Copy the service specific pom.xml and src
+ARG SERVICE_NAME
+COPY ${SERVICE_NAME}/pom.xml ${SERVICE_NAME}/
+COPY ${SERVICE_NAME}/src ${SERVICE_NAME}/src
+
+# Build the service
+RUN mvn -f ${SERVICE_NAME}/pom.xml clean package -DskipTests
+
+# Runtime stage
+FROM eclipse-temurin:21-jre-alpine
+
+WORKDIR /app
+
+ARG SERVICE_NAME
+COPY --from=builder /app/${SERVICE_NAME}/target/*.jar app.jar
+
+# Standard Spring Boot port, but it depends on the service
+EXPOSE 8080
+
+ENTRYPOINT ["java", "-jar", "app.jar"]

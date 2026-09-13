@@ -1,0 +1,367 @@
+<!-- schedule-management.component.html -->
+<div class="page-container">
+  <!-- Tabs Navigation -->
+  <div class="tabs-navigation">
+    <button class="tab-btn" [class.active]="isTabActive('interactive')" (click)="switchTab('interactive')">
+      Disponibilités
+    </button>
+    <button class="tab-btn" [class.active]="isTabActive('saved')" (click)="switchTab('saved')">
+      Emplois du temps 
+    </button>
+  </div>
+
+  <!-- Action bar for unsaved changes (Visible in both tabs) -->
+  <div class="edit-action-bar" *ngIf="hasUnsavedChanges">
+    <div class="edit-info">
+      <span class="material-symbols-outlined">edit_notifications</span>
+      <span>Vous avez des modifications non enregistrées sur le calendrier.</span>
+    </div>
+    <div class="edit-buttons">
+      <button class="btn-cancel" (click)="cancelChanges()">Annuler</button>
+      <button class="btn-save glow" (click)="savePlanningChanges()" [disabled]="isLoading">
+        <span class="material-symbols-outlined" *ngIf="!isLoading">save</span>
+        {{ isLoading ? 'Enregistrement...' : 'Enregistrer les modifications' }}
+      </button>
+    </div>
+  </div>
+
+    <div class="controls-bar">
+      <div class="week-navigation">
+        <button class="nav-btn" (click)="previousWeek()">
+          <span class="material-symbols-outlined">chevron_left</span>
+        </button>
+        <div class="week-info">
+          <span class="week-label">Semaine du</span>
+          <span class="week-date">{{ currentWeekStart }} - {{ currentWeekEnd }}</span>
+        </div>
+        <button class="nav-btn" (click)="nextWeek()">
+          <span class="material-symbols-outlined">chevron_right</span>
+        </button>
+        <button class="today-btn" (click)="goToToday()">Aujourd'hui</button>
+      </div>
+
+      <div class="view-filters">
+        <select class="filter-select" [(ngModel)]="filterSchool" (ngModelChange)="onFilterChange()">
+          <option value="Tous">Toutes les écoles</option>
+          <option *ngFor="let school of schools" [value]="school">{{ school }}</option>
+        </select>
+
+        <select class="filter-select" [(ngModel)]="selectedTeacher" (ngModelChange)="onFilterChange()">
+          <option value="Tous">Tous les enseignants</option>
+          <option *ngFor="let teacher of teachers" [value]="teacher.id">
+            {{ teacher.firstName }} {{ teacher.lastName }}
+          </option>
+        </select>
+
+        <select class="filter-select" [(ngModel)]="selectedClass" (ngModelChange)="onFilterChange()">
+          <option value="Tous">Toutes les classes</option>
+          <option *ngFor="let classe of classes" [value]="classe.nom">{{ classe.nom }}</option>
+        </select>
+
+        <button class="add-btn" style="background-color: #2563eb;" (click)="openGenerateModal()">
+          <span class="material-symbols-outlined">auto_awesome</span>
+          <span>Générer emploi du temps</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Tab Content: Interactive -->
+    <div [hidden]="!isTabActive('interactive')">
+
+    <div class="calendar-grid small-grid">
+      <div class="grid-header time-header">Heure</div>
+      <div class="grid-header" *ngFor="let day of weekDays" [class.today]="day.isToday">
+        {{ day.name }} {{ day.date }}
+      </div>
+
+      <ng-container *ngFor="let timeSlot of timeSlots">
+        <div class="grid-cell time-slot-column">
+          <span class="time-label">{{ timeSlot.start }} - {{ timeSlot.end }}</span>
+        </div>
+        
+        <div class="grid-cell day-cell" *ngFor="let day of weekDays">
+          <div class="event-card miniature disponibilite" *ngFor="let event of getDispoEventsForDayAndTimeSlot(day.name, timeSlot); let idx = index"
+               [style.background-color]="event.color"
+               [style.border-left-color]="event.color"
+               [style.top.%]="getEventTopInSlot(event, timeSlot)"
+               [style.height.%]="getEventHeightInSlot(event, timeSlot)"
+               [style.left.%]="getEventLeftInSlot(event, day.name, timeSlot, idx)"
+               [style.width.%]="getEventWidthInSlot(event, day.name, timeSlot)"
+               (click)="editSchedule(event)">            
+            <div class="event-info-mini" *ngIf="!event.isGrouped">
+              <span class="material-symbols-outlined" style="font-size:10px;">person</span>
+              {{ event.teacher }}
+            </div>
+            
+            <div *ngIf="event.isGrouped && event.teachers" class="event-teachers-grouped miniature-teachers">
+              <div class="event-teacher-item" *ngFor="let teacherName of event.teachers">
+                <span class="material-symbols-outlined" style="font-size:10px;">person</span>
+                {{ teacherName }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </ng-container>
+    </div>
+  </div>
+
+  <!-- Saved Schedules Table View -->
+  <div [hidden]="!isTabActive('saved')" class="saved-schedules-container">
+    
+    <!-- Preview Calendar Header -->
+    <div class="preview-status-header" *ngIf="isPreviewingNew || viewingEmploiDuTempsId">
+      <div class="header-main">
+        <h2 class="preview-title">{{ getPreviewTitle() }}</h2>
+      </div>
+      <div class="header-details">
+        <div class="detail-item">
+          <span class="material-symbols-outlined">calendar_month</span>
+          <span>Semaine du {{ currentWeekStart }} au {{ currentWeekEnd }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Preview Calendar Above Table (Horizontally Scrollable for multiple classes) -->
+    <div class="multi-calendar-scroll-wrapper" *ngIf="isPreviewingNew || viewingEmploiDuTempsId">
+      <div class="multi-calendar-container" [style.display]="getUniqueClasses().length > 1 ? 'flex' : 'block'" 
+           style="overflow-x: auto; gap: 20px; padding-bottom: 20px;">
+        
+        <div class="calendar-instance" *ngFor="let cls of (getUniqueClasses().length > 0 ? getUniqueClasses() : [null])" 
+             [style.min-width]="getUniqueClasses().length > 1 ? '800px' : '100%'"
+             style="flex: 0 0 auto;">
+           
+           <h3 class="class-calendar-title" *ngIf="getUniqueClasses().length > 0" 
+               style="margin-bottom: 10px; color: #2563eb; font-weight: 700; padding: 10px 20px; background: #eff6ff; border-radius: 8px; border-left: 5px solid #2563eb; display: flex; align-items: center; gap: 10px;">
+             <span class="material-symbols-outlined">groups</span>
+             Classe: {{ cls?.nom || 'Non assigné' }}
+           </h3>
+
+           <div class="calendar-grid small-grid">
+              <!-- Calendar Header -->
+              <div class="grid-header time-header">Heure</div>
+              <div class="grid-header" *ngFor="let day of weekDays" [class.today]="day.isToday">{{ day.name }}</div>
+              
+              <!-- Calendar Content -->
+              <ng-container *ngFor="let timeSlot of timeSlots">
+                <div class="grid-cell time-slot-column">
+                  <span class="time-label">{{ timeSlot.start }} - {{ timeSlot.end }}</span>
+                </div>
+                
+                <div class="grid-cell day-cell" *ngFor="let day of weekDays"
+                     (dragover)="$event.preventDefault()" (drop)="onDrop($event, day.name, timeSlot, cls)">
+                     
+                  <!-- Existing event blocks (Filtered by class) -->
+                  <div class="event-card miniature" *ngFor="let event of getEventsForDayAndTimeSlot(day.name, timeSlot, false, cls?.idClasse); let idx = index"
+                       [style.background-color]="event.color"
+                       [style.border-left-color]="event.color"
+                       [style.top.%]="getEventTopInSlot(event, timeSlot)"
+                       [style.height.%]="getEventHeightInSlot(event, timeSlot)"
+                       [style.left.%]="getEventLeftInSlot(event, day.name, timeSlot, idx)"
+                       [style.width.%]="getEventWidthInSlot(event, day.name, timeSlot)"
+                       draggable="true" 
+                       (dragstart)="onDragStart($event, event)">
+                    <div class="event-subject">{{ event.title }}</div>
+                    <div class="event-info-mini">
+                      <span class="material-symbols-outlined" style="font-size:9px;">person</span>
+                      {{ event.teacher }}
+                    </div>
+                    <div class="event-info-mini" *ngIf="!cls">
+                      <span class="material-symbols-outlined" style="font-size:9px;">groups</span>
+                      {{ event.classeNom }}
+                    </div>
+                  </div>
+                  
+                  <!-- Block for "Temps personnel de l'étudiant" when slot is empty -->
+                  <div class="event-card miniature temps-personnel" 
+                       *ngIf="getEventsForDayAndTimeSlot(day.name, timeSlot, false, cls?.idClasse).length === 0"
+                       style="background-color: #f1f5f9; border-left-color: #cbd5e1; display: flex; align-items: center; justify-content: center; height: 100%; top: 0; position: absolute; width: 100%;">
+                    <div class="event-subject" style="color: #64748b; font-style: italic; text-align: center; font-size: 11px;">Temps personnel de l'étudiant</div>
+                  </div>
+
+                </div>
+              </ng-container>
+           </div>
+        </div>
+      </div>
+       
+       <!-- Save Button Action Bar -->
+       <div class="save-schedule-actions" style="display: flex; justify-content: flex-end; margin-top: 15px; margin-bottom: 30px;" *ngIf="schedules.length > 0 && isPreviewingNew">
+         <button class="add-btn" style="background-color: #10b981; gap: 8px;" (click)="saveWholeSchedule()">
+           <span class="material-symbols-outlined">save</span>
+           <span>Sauvegarder tout les emplois du temps</span>
+         </button>
+       </div>
+    </div>
+
+    <div class="table-card">
+      <div class="table-header-actions">
+        <h3 class="table-title">Historique des Générations</h3>
+      </div>
+      
+      <div class="table-wrapper">
+        <table class="timora-table">
+          <thead>
+            <tr>
+              <th class="expand-column"></th>
+              <th>TITRE DE L'EMPLOI DU TEMPS</th>
+              <th>ECOLE</th>
+              <th>TYPE</th>
+              <th>DATE</th>
+              <th>TAILLE</th>
+              <th>STATUT</th>
+              <th>ACTIONS</th>
+            </tr>
+          </thead>
+          <tbody>
+            <ng-container *ngFor="let schedule of savedSchedules; let i = index">
+              <tr [class.table-row-even]="i % 2 === 0" [class.table-row-odd]="i % 2 === 1">
+              <td class="expand-cell" (click)="toggleRow(schedule.id)">
+                <span class="material-symbols-outlined expand-icon" [style.transform]="isRowExpanded(schedule.id) ? 'rotate(180deg)' : 'none'">
+                  expand_more
+                </span>
+              </td>
+              <td class="font-medium">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <span class="material-symbols-outlined" style="color: #64748b;">event_note</span>
+                  {{ schedule.title }}
+                </div>
+              </td>
+              <td class="text-secondary">{{ schedule.institution }}</td>
+              <td><span class="type-tag">{{ schedule.type }}</span></td>
+              <td class="text-secondary">{{ schedule.date }}</td>
+              <td class="text-secondary">{{ schedule.size }}</td>
+              <td>
+                <span class="status-badge" [class.status-active]="schedule.status === 'TERMINE' || schedule.status === 'VALIDE'" [class.status-warning]="schedule.status === 'EN_ATTENTE'" [class.status-inactive]="schedule.status === 'REJETE'">
+                  {{ schedule.status === 'TERMINE' ? 'VALIDE' : schedule.status }}
+                </span>
+              </td>
+              <td>
+                <div class="action-buttons">
+                  <button class="action-btn" title="Télécharger PDF" (click)="downloadSavedSchedule(schedule)">
+                    <span class="material-symbols-outlined">download</span>
+                  </button>
+                  <button class="action-btn" title="Visualiser" (click)="viewSavedSchedule(schedule)">
+                    <span class="material-symbols-outlined">visibility</span>
+                  </button>
+                  <button class="action-btn" title="Notifier Enseignants" (click)="onNotifyTeachers(schedule.id, schedule.title)" style="color: #0ea5e9;">
+                    <span class="material-symbols-outlined">mail</span>
+                  </button>
+                  <button class="action-btn delete-btn" title="Supprimer" (click)="deleteSavedSchedule(schedule)">
+                    <span class="material-symbols-outlined">delete</span>
+                  </button>
+                </div>
+              </td>
+            </tr>
+            <!-- Expanded Detail Row -->
+            <tr *ngIf="isRowExpanded(schedule.id)" class="detail-row">
+              <td colspan="8">
+                <div class="detail-content" style="padding: 20px; background: #f8fafc; border-bottom: 2px solid #e2e8f0;">
+                  <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;">
+                    <div>
+                      <p style="font-size: 11px; color: #64748b; margin-bottom: 4px; text-transform: uppercase;">Filière / Spécialité</p>
+                      <p style="font-weight: 600; color: #1e293b;">{{ schedule.filiere || 'Non spécifiée' }}</p>
+                    </div>
+                    <div>
+                      <p style="font-size: 11px; color: #64748b; margin-bottom: 4px; text-transform: uppercase;">Semestre</p>
+                      <p style="font-weight: 600; color: #1e293b;">{{ getSemestreLabel(schedule.semestre) }}</p>
+                    </div>
+                    <div>
+                      <p style="font-size: 11px; color: #64748b; margin-bottom: 4px; text-transform: uppercase;">Dernière modification</p>
+                      <p style="font-weight: 600; color: #1e293b;">{{ schedule.date }}</p>
+                    </div>
+                  </div>
+                </div>
+              </td>
+            </tr>
+            </ng-container>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Paramètres de Génération -->
+  <div class="modal-overlay" *ngIf="showGenerateModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Paramètres de Génération</h3>
+        <button class="close-btn" (click)="closeGenerateModal()">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      
+      <div class="modal-body">
+        <!-- Loading Overlay -->
+        <div class="modal-loading-overlay" *ngIf="isLoading">
+          <div class="loader-content">
+            <div class="pulse-loader"></div>
+            <p>Intelligence Artificielle en action...</p>
+            <span>Optimisation des créneaux horaires en cours</span>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>École <span class="required">*</span></label>
+            <select [(ngModel)]="genParams.ecoleId" class="form-input">
+              <option value="">Sélectionner une école</option>
+              <option *ngFor="let ecole of ecoles" [value]="ecole.idEcole">{{ ecole.nomEcole }}</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label>Semestre</label>
+            <select [(ngModel)]="genParams.semestre" class="form-input">
+              <option *ngFor="let s of semestres" [value]="s.id">{{ s.label }}</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Filière</label>
+            <select [(ngModel)]="genParams.filiereId" class="form-input">
+              <option value="">Toutes les filières</option>
+              <option *ngFor="let f of filieres" [value]="f.idFiliere">{{ f.nom }}</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Classe</label>
+            <select [(ngModel)]="genParams.classeId" class="form-input">
+              <option value="">Toutes les classes</option>
+              <option *ngFor="let c of getFilteredClasses()" [value]="c.idClasse">{{ c.nom }}</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group full-width">
+          <label>Semaine de début</label>
+          <div class="week-picker-container">
+            <button class="nav-btn" (click)="previousGenWeek()" [disabled]="isGenWeekCurrentOrPast()" [style.opacity]="isGenWeekCurrentOrPast() ? '0.3' : '1'" [style.cursor]="isGenWeekCurrentOrPast() ? 'not-allowed' : 'pointer'">
+              <span class="material-symbols-outlined">chevron_left</span>
+            </button>
+            <div class="week-display">
+              <span class="week-label">SEMAINE DU</span>
+              <span class="week-range">{{ genWeekStart }} - {{ genWeekEnd }}</span>
+            </div>
+            <button class="nav-btn" (click)="nextGenWeek()">
+              <span class="material-symbols-outlined">chevron_right</span>
+            </button>
+            <button class="today-btn" (click)="goToGenToday()">Aujourd'hui</button>
+          </div>
+          <small class="help-text">La génération s'appliquera à la période sélectionnée ci-dessus.</small>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-secondary" (click)="closeGenerateModal()">Annuler</button>
+        <button class="btn-primary glow" (click)="confirmGenerate()" [disabled]="isLoading">
+          <span class="material-symbols-outlined" *ngIf="!isLoading" style="vertical-align: middle; margin-right: 5px;">auto_awesome</span>
+          <span class="spinner" *ngIf="isLoading"></span>
+          {{ isLoading ? 'Génération en cours...' : 'Générer l\'emploi du temps' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>

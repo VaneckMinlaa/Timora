@@ -1,0 +1,59 @@
+spring:
+  application:
+    name: timora-room-service
+  data:
+    rest:
+      detection-strategy: annotated
+  config:
+    import: "optional:configserver:"
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/timora_room}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_SERVER_URL:http://localhost:8761/eureka}
+    fetch-registry: true
+    register-with-eureka: true
+  instance:
+    prefer-ip-address: true
+    appname: TIMORA-ROOM-SERVICE
+    instance-id: ${spring.application.name}:${spring.application.instance-id:${server.port}}
+
+server:
+  port: 8083
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    info:
+      enabled: true
+  info:
+    app:
+      name: ${spring.application.name}
+      description: Service de gestion des salles
+      version: 0.0.1-SNAPSHOT
+
+# Documentation OpenAPI / Swagger
+springdoc:
+  packages-to-scan: com.iusjc.timora.room.controller
+  api-docs:
+    path: /v3/api-docs
+    enabled: true
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true
+    operationsSorter: method
+    tagsSorter: alpha

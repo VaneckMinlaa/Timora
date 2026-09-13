@@ -1,0 +1,497 @@
+<div class="resources-layout" (click)="closeDropdowns()">
+  <!-- Main Content -->
+  <div class="resources-container">
+    <main class="resources-page">
+      <!-- Search and Filters -->
+      <div class="filters-section">
+        <div class="search-wrapper horizontal-actions">
+          <div class="search-box">
+            <span class="material-symbols-outlined search-icon">search</span>
+            <input
+              type="text"
+              class="search-input"
+              placeholder="Rechercher un équipement par nom, code..."
+              [(ngModel)]="searchTerm"
+              (input)="onSearch()"
+            />
+          </div>
+
+          <div class="header-actions horizontal-actions">
+            <button class="btn btn-secondary" (click)="openImportModal()">
+              <span class="material-symbols-outlined">upload_file</span>
+              <span>Importer Excel</span>
+            </button>
+            <button class="btn btn-secondary" (click)="openCategoryModal()">
+              <span class="material-symbols-outlined">category</span>
+              <span>Créer un type</span>
+            </button>
+            <button class="add-btn" (click)="onAddEquipement()">
+              <span class="material-symbols-outlined">add</span>
+              <span>Ajouter un équipement</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="filter-buttons" (click)="$event.stopPropagation()">
+          <!-- Dropdown Catégorie -->
+          <div class="filter-dropdown-wrapper">
+            <button class="filter-btn" (click)="toggleCategorieFilter(); $event.stopPropagation()" [class.active]="showCategorieDropdown || selectedCategorie">
+              <span>Catégorie: {{ getSelectedCategorieLabel() }}</span>
+              <span class="material-symbols-outlined" [class.rotated]="showCategorieDropdown">expand_more</span>
+            </button>
+            <div *ngIf="showCategorieDropdown" class="dropdown-menu" (click)="$event.stopPropagation()">
+              <button
+                *ngFor="let option of categorieOptions"
+                class="dropdown-item"
+                [class.active]="selectedCategorie === option.value"
+                (click)="selectCategorie(option.value)"
+              >
+                {{ option.label }}
+              </button>
+            </div>
+          </div>
+
+          <!-- Dropdown Statut -->
+          <div class="filter-dropdown-wrapper">
+            <button class="filter-btn" (click)="toggleStatutFilter(); $event.stopPropagation()" [class.active]="showStatutDropdown || selectedStatut">
+              <span>Statut: {{ getSelectedStatutLabel() }}</span>
+              <span class="material-symbols-outlined" [class.rotated]="showStatutDropdown">expand_more</span>
+            </button>
+            <div *ngIf="showStatutDropdown" class="dropdown-menu" (click)="$event.stopPropagation()">
+              <button
+                *ngFor="let option of statutOptions"
+                class="dropdown-item"
+                [class.active]="selectedStatut === option.value"
+                (click)="selectStatut(option.value)"
+              >
+                {{ option.label }}
+              </button>
+            </div>
+          </div>
+
+          <!-- Dropdown Salle -->
+          <div class="filter-dropdown-wrapper">
+            <button class="filter-btn" (click)="toggleSalleFilter(); $event.stopPropagation()" [class.active]="showSalleDropdown || selectedSalleId">
+              <span>Salle: {{ getSelectedSalleLabel() }}</span>
+              <span class="material-symbols-outlined" [class.rotated]="showSalleDropdown">expand_more</span>
+            </button>
+            <div *ngIf="showSalleDropdown" class="dropdown-menu" (click)="$event.stopPropagation()">
+              <button
+                *ngFor="let option of salleOptions"
+                class="dropdown-item"
+                [class.active]="selectedSalleId === option.value"
+                (click)="selectSalle(option.value)"
+              >
+                {{ option.label }}
+              </button>
+            </div>
+          </div>
+
+          <button class="reset-btn" (click)="resetFilters(); $event.stopPropagation()">
+            <span class="material-symbols-outlined">filter_list_off</span>
+            <span class="reset-text">Réinitialiser</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Loading State -->
+      <div *ngIf="isLoading" class="loading-container">
+        <div class="loading-spinner">
+          <span class="spinner"></span>
+          <p>Chargement des équipements...</p>
+        </div>
+      </div>
+
+      <!-- Error State -->
+      <div *ngIf="error && !isLoading" class="error-container">
+        <div class="error-message">
+          <span class="material-symbols-outlined">error_outline</span>
+          <p>{{ error }}</p>
+          <button class="retry-btn" (click)="loadEquipements()">Réessayer</button>
+        </div>
+      </div>
+
+      <!-- Data Table -->
+      <div *ngIf="!isLoading && !error" class="table-container">
+        <div class="table-wrapper">
+          <table class="timora-table">
+            <thead>
+              <tr>
+                <th class="expand-column"></th>
+                <th scope="col">Nom de l'équipement</th>
+                <th scope="col">Code</th>
+                <th scope="col">Catégorie</th>
+                <th scope="col">Salle</th>
+                <th scope="col">Statut</th>
+                <th scope="col">Prochaine maintenance</th>
+                <th scope="col" class="text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngIf="filteredEquipements.length === 0" class="no-data-row">
+                <td colspan="7">
+                  <div class="empty-state">
+                    <p>Aucun équipement ne correspond à vos critères de recherche.</p>
+                  </div>
+                </td>
+              </tr>
+              <ng-container *ngFor="let equipement of paginatedEquipements; let i = index">
+                <tr
+                  [class.table-row-even]="i % 2 === 0"
+                  [class.table-row-odd]="i % 2 === 1"
+                  [class.row-expanded]="expandedEquipId === equipement.idEquip"
+                  (click)="toggleRow(equipement)"
+                  class="clickable-row"
+                >
+                  <td class="expand-cell">
+                    <span class="material-symbols-outlined expand-icon" [class.rotated]="expandedEquipId === equipement.idEquip">
+                      chevron_right
+                    </span>
+                  </td>
+                  <td class="font-medium">{{ equipement.nom }}</td>
+                  <td>{{ getEquipementCode(equipement) }}</td>
+                  <td>{{ getCategorie(equipement) }}</td>
+                  <td>{{ getSalleName(equipement.salleId || '') }}</td>
+                  <td>
+                    <span class="status-badge" [ngClass]="getStatutClass(equipement.statut)">
+                      <span class="status-dot"></span>
+                      {{ getStatutLabel(equipement.statut) }}
+                    </span>
+                  </td>
+                  <td>{{ getNextMaintenanceDate(equipement) }}</td>
+                  <td class="text-right">
+                    <div class="action-buttons">
+                      <button class="action-btn edit-btn" (click)="$event.stopPropagation(); onEditEquipement(equipement)" title="Modifier">
+                        <span class="material-symbols-outlined">edit</span>
+                      </button>
+                      <button class="action-btn confirm-btn" (click)="$event.stopPropagation(); onMaintenanceEquipement(equipement)" title="Maintenance">
+                        <span class="material-symbols-outlined">build</span>
+                      </button>
+                      <button class="action-btn delete-btn" (click)="$event.stopPropagation(); onDeleteEquipement(equipement)" title="Supprimer">
+                        <span class="material-symbols-outlined">delete</span>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                <!-- Ligne de détail dépliante -->
+                <tr *ngIf="expandedEquipId === equipement.idEquip" class="expanded-detail-row">
+                  <td colspan="8">
+                    <div class="elegant-details-view">
+                      <!-- Section: Identification -->
+                      <div class="details-section">
+                        <div class="details-grid">
+                          <div class="detail-item">
+                            <span class="detail-label">ID Équipement</span>
+                            <span class="detail-value font-mono">{{ equipement.idEquip }}</span>
+                          </div>
+                          <div class="detail-item">
+                            <span class="detail-label">Code Inventaire</span>
+                            <span class="detail-value font-mono">{{ getEquipementCode(equipement) }}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <!-- Section: État & Historique -->
+                      <div class="details-section">
+                        <div class="details-grid">
+                          <div class="detail-item">
+                            <span class="detail-label">Catégorie</span>
+                            <span class="detail-value">{{ getCategorie(equipement) }}</span>
+                          </div>
+                          <div class="detail-item">
+                            <span class="detail-label">Statut Actuel</span>
+                            <span class="detail-value">{{ getStatutLabel(equipement.statut) }}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="details-section">
+                        <div class="details-grid">
+                          <div class="detail-item">
+                            <span class="detail-label">Dernière modification</span>
+                            <span class="detail-value">{{ formatDate(equipement.updatedAt) }}</span>
+                          </div>
+                          <div class="detail-item">
+                            <span class="detail-label">Date de création</span>
+                            <span class="detail-value">{{ formatDate(equipement.createdAt) }}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              </ng-container>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Pagination -->
+      <div *ngIf="!isLoading && !error && totalEquipements > 0" class="timora-pagination">
+        <p class="pagination-info">
+          Affichage de <span>{{ startIndex }}</span> à <span>{{ endIndex }}</span> sur <span>{{ totalEquipements }}</span> équipements
+        </p>
+        <div class="pagination-nav">
+          <button class="page-btn" [disabled]="currentPage === 1" (click)="previousPage()">
+            <span class="material-symbols-outlined">chevron_left</span>
+          </button>
+          <button
+            *ngFor="let page of visiblePages"
+            class="page-btn"
+            [class.active]="currentPage === page"
+            (click)="goToPage(page)"
+          >
+            {{ page }}
+          </button>
+          <button class="page-btn" [disabled]="currentPage === totalPages" (click)="nextPage()">
+            <span class="material-symbols-outlined">chevron_right</span>
+          </button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Modal Add Equipement -->
+  <div *ngIf="showAddModal" class="modal-overlay" (click)="closeAddModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2 class="modal-title">Ajouter un équipement</h2>
+        <button class="modal-close-btn" (click)="closeAddModal()">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <form class="modal-form" (ngSubmit)="onSubmitAddEquipement()">
+        <div *ngIf="formError" class="form-error">
+          <span class="material-symbols-outlined">error_outline</span>
+          <p>{{ formError }}</p>
+        </div>
+
+        <div class="form-columns">
+          <div class="form-column">
+            <div class="form-group">
+              <label class="form-label">
+                Nom de l'équipement <span class="required">*</span>
+              </label>
+              <input
+                type="text"
+                class="form-input"
+                [(ngModel)]="newEquipement.nom"
+                name="nom"
+                placeholder="Ex: Projecteur Epson EB-S05"
+                required
+              />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">
+                Statut <span class="required">*</span>
+              </label>
+              <select
+                class="form-select"
+                [(ngModel)]="newEquipement.statut"
+                name="statut"
+                required
+              >
+                <option value="DISPONIBLE">Disponible</option>
+                <option value="EN_COUR_D_UTILISATION">En cours d'utilisation</option>
+                <option value="EN_MAINTENANCE">En maintenance</option>
+                <option value="DEFECTUEUX">Défectueux</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-column">
+            <div class="form-group">
+              <label class="form-label">
+                Type d'équipement <span class="required">*</span>
+              </label>
+              <div class="input-with-action">
+                <select
+                  class="form-select"
+                  [(ngModel)]="newEquipement.categorie"
+                  name="categorie"
+                  required
+                >
+                  <option value="">Sélectionner un type</option>
+                  <option *ngFor="let cat of categories" [value]="cat">
+                    {{ cat }}
+                  </option>
+                </select>
+                <button type="button" class="btn-icon-sm" (click)="openCategoryModal()" title="Nouveau type">
+                  <span class="material-symbols-outlined">add</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">
+                Salle <span class="required">*</span>
+              </label>
+              <select
+                class="form-select"
+                [(ngModel)]="newEquipement.salleId"
+                name="salleId"
+              >
+                <option value="">Non assigné (Libre)</option>
+                <option *ngFor="let room of rooms" [value]="room.id">
+                  {{ room.name }}
+                </option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" (click)="closeAddModal()" [disabled]="isSubmitting">
+            Annuler
+          </button>
+          <button type="submit" class="btn btn-primary" [disabled]="isSubmitting">
+            <span *ngIf="isSubmitting" class="spinner-small"></span>
+            <span *ngIf="!isSubmitting">Créer</span>
+            <span *ngIf="isSubmitting">Création...</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Edit Equipement -->
+  <div *ngIf="showEditModal && editingEquipement" class="modal-overlay" (click)="closeEditModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2 class="modal-title">Modifier l'équipement</h2>
+        <button class="modal-close-btn" (click)="closeEditModal()">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <form class="modal-form" (ngSubmit)="onSubmitEditEquipement()">
+        <div *ngIf="editFormError" class="form-error">
+          <span class="material-symbols-outlined">error_outline</span>
+          <p>{{ editFormError }}</p>
+        </div>
+
+        <div class="form-columns">
+          <div class="form-column">
+            <div class="form-group">
+              <label class="form-label">
+                Nom de l'équipement <span class="required">*</span>
+              </label>
+              <input
+                type="text"
+                class="form-input"
+                [(ngModel)]="editForm.nom"
+                name="editNom"
+                placeholder="Ex: Projecteur Epson EB-S05"
+                required
+              />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">
+                Statut <span class="required">*</span>
+              </label>
+              <select
+                class="form-select"
+                [(ngModel)]="editForm.statut"
+                name="editStatut"
+                required
+              >
+                <option value="DISPONIBLE">Disponible</option>
+                <option value="EN_COUR_D_UTILISATION">En cours d'utilisation</option>
+                <option value="EN_MAINTENANCE">En maintenance</option>
+                <option value="DEFECTUEUX">Défectueux</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-column">
+            <div class="form-group">
+              <label class="form-label">
+                Type d'équipement <span class="required">*</span>
+              </label>
+              <select
+                class="form-select"
+                [(ngModel)]="editForm.categorie"
+                name="editCategorie"
+                required
+              >
+                <option value="">Sélectionner un type</option>
+                <option *ngFor="let cat of categories" [value]="cat">
+                  {{ cat }}
+                </option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">
+                Salle <span class="required">*</span>
+              </label>
+              <select
+                class="form-select"
+                [(ngModel)]="editForm.salleId"
+                name="editSalleId"
+              >
+                <option value="">Non assigné (Libre)</option>
+                <option *ngFor="let room of rooms" [value]="room.id">
+                  {{ room.name }}
+                </option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" (click)="closeEditModal()" [disabled]="isSubmittingEdit">
+            Annuler
+          </button>
+          <button type="submit" class="btn btn-primary" [disabled]="isSubmittingEdit">
+            <span *ngIf="isSubmittingEdit" class="spinner-small"></span>
+            <span *ngIf="!isSubmittingEdit">Enregistrer</span>
+            <span *ngIf="isSubmittingEdit">Enregistrement...</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Import Excel Modal -->
+  <app-excel-import
+    [importType]="'resources'"
+    [isOpen]="showImportModal"
+    (closeModal)="showImportModal = false"
+    (fileSelected)="onImportFile($event)"
+  ></app-excel-import>
+
+  <!-- Modal Créer Type d'équipement -->
+  <div *ngIf="showCategoryModal" class="modal-overlay" (click)="showCategoryModal = false">
+    <div class="modal-content modal-sm" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2 class="modal-title">Nouveau Type</h2>
+        <button class="modal-close-btn" (click)="showCategoryModal = false">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <div class="modal-form">
+        <p class="modal-description" style="margin-bottom: 20px; color: var(--text-secondary); font-size: 14px;">
+          Définissez une nouvelle catégorie d'équipement pour votre inventaire.
+        </p>
+        <div class="form-group">
+          <label class="form-label">Nom du type <span class="required">*</span></label>
+          <input
+            type="text"
+            class="form-input"
+            [(ngModel)]="newCategoryName"
+            placeholder="Ex: Système de Son"
+            (keyup.enter)="addCategory()"
+            autofocus
+          />
+        </div>
+        <div class="modal-actions" style="margin-top: 24px;">
+          <button type="button" class="btn btn-secondary" (click)="showCategoryModal = false">Annuler</button>
+          <button type="button" class="btn btn-primary" (click)="addCategory()" [disabled]="!newCategoryName.trim()">
+            Créer le type
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>

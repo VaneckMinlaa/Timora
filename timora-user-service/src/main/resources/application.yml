@@ -1,0 +1,81 @@
+spring:
+  application:
+    name: timora-user-service
+  data:
+    rest:
+      # Ne pas exposer les repositories en REST automatiquement (évite conflits avec Springdoc)
+      detection-strategy: annotated
+  config:
+    import: "optional:configserver:"
+  cloud:
+    config:
+      enabled: false
+      import-check:
+        enabled: false
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/timora_user}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+  http:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_SERVER_URL:http://localhost:8761/eureka}
+    fetch-registry: true
+    register-with-eureka: true
+  instance:
+    prefer-ip-address: true
+    appname: TIMORA-USER-SERVICE
+    instance-id: ${spring.application.name}:${spring.application.instance-id:${server.port}}
+
+server:
+  port: 8082
+  max-http-header-size: 16MB
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    info:
+      enabled: true
+  info:
+    app:
+      name: ${spring.application.name}
+      description: Service de gestion des utilisateurs
+      version: 0.0.1-SNAPSHOT
+
+# Documentation OpenAPI / Swagger
+springdoc:
+  packages-to-scan: com.iusjc.timora.user.controller
+  remove-broken-reference-definitions: false
+  model-converters:
+    polymorphic-converter:
+      enabled: false
+  api-docs:
+    path: /v3/api-docs
+    enabled: true
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true
+    operationsSorter: method
+    tagsSorter: alpha

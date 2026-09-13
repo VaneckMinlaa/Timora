@@ -1,0 +1,65 @@
+<svg viewBox="0 0 600 500" xmlns="http://www.w3.org/2000/svg">
+  <!-- Calendrier -->
+  <g class="calendar-group">
+    <rect x="50" y="80" width="200" height="180" rx="12" fill="white" stroke="#e2e8f0" stroke-width="2"/>
+    <rect x="50" y="80" width="200" height="40" rx="12" fill="url(#calendarGradient)"/>
+    <text x="150" y="105" text-anchor="middle" fill="white" font-size="18" font-weight="700" font-family="Inter, sans-serif">Novembre</text>
+    <!-- Grille du calendrier -->
+    <g class="calendar-grid">
+      <line x1="50" y1="140" x2="250" y2="140" stroke="#e2e8f0" stroke-width="1"/>
+      <line x1="100" y1="120" x2="100" y2="260" stroke="#e2e8f0" stroke-width="1"/>
+      <line x1="150" y1="120" x2="150" y2="260" stroke="#e2e8f0" stroke-width="1"/>
+      <line x1="200" y1="120" x2="200" y2="260" stroke="#e2e8f0" stroke-width="1"/>
+      <!-- Jours marqués en bleu -->
+      <circle cx="125" cy="180" r="12" fill="#2563eb" opacity="0.8"/>
+      <circle cx="175" cy="200" r="12" fill="#3b82f6" opacity="0.8"/>
+      <circle cx="125" cy="220" r="12" fill="#60a5fa" opacity="0.8"/>
+    </g>
+  </g>
+
+  <!-- Horloge -->
+  <g class="clock-group">
+    <circle cx="450" cy="150" r="60" fill="white" stroke="#e2e8f0" stroke-width="2"/>
+    <circle cx="450" cy="150" r="4" fill="#2563eb"/>
+    <!-- Aiguilles -->
+    <line x1="450" y1="150" x2="450" y2="120" stroke="#2563eb" stroke-width="3" stroke-linecap="round"/>
+    <line x1="450" y1="150" x2="470" y2="150" stroke="#3b82f6" stroke-width="2" stroke-linecap="round"/>
+    <!-- Chiffres -->
+    <text x="450" y="100" text-anchor="middle" fill="#64748b" font-size="14" font-weight="600" font-family="Inter, sans-serif">12</text>
+    <text x="500" y="155" text-anchor="middle" fill="#64748b" font-size="14" font-weight="600" font-family="Inter, sans-serif">3</text>
+    <text x="450" y="210" text-anchor="middle" fill="#64748b" font-size="14" font-weight="600" font-family="Inter, sans-serif">6</text>
+    <text x="400" y="155" text-anchor="middle" fill="#64748b" font-size="14" font-weight="600" font-family="Inter, sans-serif">9</text>
+  </g>
+
+  <!-- Salle de réunion -->
+  <g class="room-group">
+    <rect x="300" y="300" width="180" height="140" rx="12" fill="white" stroke="#e2e8f0" stroke-width="2"/>
+    <rect x="320" y="320" width="140" height="20" rx="4" fill="url(#roomGradient)"/>
+    <text x="390" y="335" text-anchor="middle" fill="white" font-size="12" font-weight="600" font-family="Inter, sans-serif">Salle A101</text>
+    <!-- Table -->
+    <rect x="340" y="360" width="100" height="60" rx="8" fill="#f1f5f9" stroke="#e2e8f0" stroke-width="1"/>
+    <!-- Chaises en bleu -->
+    <circle cx="330" cy="380" r="8" fill="#2563eb" opacity="0.6"/>
+    <circle cx="450" cy="380" r="8" fill="#3b82f6" opacity="0.6"/>
+    <circle cx="330" cy="400" r="8" fill="#60a5fa" opacity="0.6"/>
+    <circle cx="450" cy="400" r="8" fill="#93c5fd" opacity="0.6"/>
+  </g>
+
+  <!-- Notification badge -->
+  <g class="notification-group">
+    <circle cx="520" cy="100" r="20" fill="#ef4444"/>
+    <text x="520" y="108" text-anchor="middle" fill="white" font-size="14" font-weight="700" font-family="Inter, sans-serif">3</text>
+  </g>
+
+  <!-- Définition des gradients en bleu -->
+  <defs>
+    <linearGradient id="calendarGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#2563eb;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#3b82f6;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="roomGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#2563eb;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#3b82f6;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+</svg>

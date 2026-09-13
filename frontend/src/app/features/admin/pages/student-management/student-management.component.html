@@ -1,0 +1,376 @@
+<div class="users-layout" (click)="closeDropdowns()">
+  <!-- Main Content -->
+  <div class="users-container">
+    <main class="users-page">
+      <!-- Search and Filters -->
+      <div class="filters-section">
+        <div class="search-wrapper horizontal-actions">
+          <!-- Barre de recherche -->
+          <div class="search-box">
+            <div class="search-icon">
+              <span class="material-symbols-outlined">search</span>
+            </div>
+            <input
+              type="text"
+              class="search-input"
+              placeholder="Rechercher par nom, email..."
+              [(ngModel)]="searchTerm"
+              (input)="onSearch()"
+            />
+          </div>
+
+          <!-- Boutons alignés à droite -->
+          <div class="header-actions horizontal-actions">
+            <button class="btn btn-secondary" (click)="openImportModal()">
+              <span class="material-symbols-outlined">upload_file</span>
+              <span>Importer Excel</span>
+            </button>
+            <button class="add-btn" (click)="onAddStudent()">
+              <span class="material-symbols-outlined">add</span>
+              <span>Ajouter un étudiant</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="filter-buttons" (click)="$event.stopPropagation()">
+          <!-- Dropdown Filière -->
+          <div class="filter-dropdown-wrapper">
+            <button class="filter-btn" (click)="toggleFiliereFilter(); $event.stopPropagation()" [class.active]="showFiliereDropdown || selectedFiliereId">
+              <span>Filière: {{ getSelectedFiliereLabel() }}</span>
+              <span class="material-symbols-outlined" [class.rotated]="showFiliereDropdown">expand_more</span>
+            </button>
+            <div *ngIf="showFiliereDropdown" class="dropdown-menu" (click)="$event.stopPropagation()">
+              <button
+                class="dropdown-item"
+                [class.active]="!selectedFiliereId"
+                (click)="selectFiliere('')"
+              >
+                Toutes
+              </button>
+              <button
+                *ngFor="let filiere of filieres"
+                class="dropdown-item"
+                [class.active]="selectedFiliereId === filiere.idFiliere"
+                (click)="selectFiliere(filiere.idFiliere)"
+              >
+                {{ filiere.nom }}
+              </button>
+            </div>
+          </div>
+
+          <!-- Dropdown Niveau -->
+          <div class="filter-dropdown-wrapper">
+            <button class="filter-btn" (click)="toggleNiveauFilter(); $event.stopPropagation()" [class.active]="showNiveauDropdown || selectedNiveau">
+              <span>Niveau: {{ selectedNiveau || 'Tous' }}</span>
+              <span class="material-symbols-outlined" [class.rotated]="showNiveauDropdown">expand_more</span>
+            </button>
+            <div *ngIf="showNiveauDropdown" class="dropdown-menu" (click)="$event.stopPropagation()">
+              <button
+                class="dropdown-item"
+                [class.active]="!selectedNiveau"
+                (click)="selectNiveau('')"
+              >
+                Tous
+              </button>
+              <button
+                *ngFor="let niveau of niveaux"
+                class="dropdown-item"
+                [class.active]="selectedNiveau === niveau"
+                (click)="selectNiveau(niveau)"
+              >
+                {{ niveau }}
+              </button>
+            </div>
+          </div>
+
+          <button class="reset-btn" (click)="resetFilters(); $event.stopPropagation()">
+            <span class="material-symbols-outlined">filter_list_off</span>
+            <span class="reset-text">Réinitialiser</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Loading State -->
+      <div *ngIf="isLoading" class="loading-container">
+        <div class="loading-spinner">
+          <span class="spinner"></span>
+          <p>Chargement des étudiants...</p>
+        </div>
+      </div>
+
+      <!-- Error State -->
+      <div *ngIf="error && !isLoading" class="error-container">
+        <div class="error-message">
+          <span class="material-symbols-outlined">error</span>
+          <p>{{ error }}</p>
+          <button class="retry-btn" (click)="loadStudents()">Réessayer</button>
+        </div>
+      </div>
+
+      <!-- Students Table -->
+      <div *ngIf="!isLoading && !error" class="table-container">
+        <div class="table-wrapper">
+          <table class="timora-table">
+            <thead>
+             <tr>
+               <th>Étudiant</th>
+               <th>Email</th>
+               <th>Filière</th>
+               <th>Classe</th>
+               <th>Niveau</th>
+               <th>Actions</th>
+             </tr>
+            </thead>
+            <tbody>
+            <tr *ngFor="let student of paginatedStudents; let i = index" [class.table-row-even]="i % 2 === 0" [class.table-row-odd]="i % 2 === 1">
+              <td class="font-medium">
+                <div class="user-name-cell">
+                  <div class="user-avatar-initials" [style.background-color]="getUserAvatarColor(student.firstName, student.lastName)">
+                    {{ getUserInitials(student.firstName, student.lastName) }}
+                  </div>
+                  <span>{{ student.firstName }} {{ student.lastName }}</span>
+                </div>
+              </td>
+               <td class="text-secondary">{{ student.email }}</td>
+               <td class="text-secondary">{{ getFiliereName(student.filiereId) }}</td>
+               <td class="text-secondary">{{ getClasseName(student.classeId) }}</td>
+               <td class="text-secondary">{{ student.niveau || 'N/A' }}</td>
+              <td>
+                <div class="action-buttons">
+                  <button
+                    class="action-btn edit-btn"
+                    title="Éditer"
+                    (click)="onEditStudent(student)"
+                    [disabled]="isLoading"
+                  >
+                    <span class="material-symbols-outlined">edit</span>
+                  </button>
+                  <button
+                    class="action-btn delete-btn"
+                    title="Supprimer"
+                    (click)="onDeleteStudent(student)"
+                    [disabled]="isLoading"
+                  >
+                    <span class="material-symbols-outlined">delete</span>
+                  </button>
+                </div>
+              </td>
+            </tr>
+             <tr *ngIf="paginatedStudents.length === 0 && !isLoading && filteredStudents.length === 0">
+               <td colspan="6" class="no-data">Aucun étudiant trouvé</td>
+             </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Pagination -->
+      <div class="timora-pagination" *ngIf="!isLoading && !error">
+        <p class="pagination-info">
+          Affichage de <span>{{ startIndex }}</span> à
+          <span>{{ endIndex }}</span> sur
+          <span>{{ totalStudentsCount }}</span> résultats
+        </p>
+        <nav class="pagination-nav">
+          <button class="page-btn" (click)="previousPage()" [disabled]="currentPage === 1">
+            <span class="material-symbols-outlined">chevron_left</span>
+          </button>
+          <button
+            *ngFor="let page of visiblePages"
+            class="page-btn"
+            [class.active]="page === currentPage"
+            (click)="goToPage(page)"
+          >
+            {{ page }}
+          </button>
+          <button class="page-btn" (click)="nextPage()" [disabled]="currentPage === totalPages">
+            <span class="material-symbols-outlined">chevron_right</span>
+          </button>
+        </nav>
+      </div>
+    </main>
+  </div>
+
+  <!-- Modal d'ajout/édition d'étudiant -->
+  <div *ngIf="showModal" class="modal-overlay" (click)="closeModal(); closeDropdowns()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <!-- <h2 class="modal-title">{{ isEditing ? 'Modifier l\'étudiant' : 'Ajouter un étudiant' }}</h2> -->
+        <button class="modal-close-btn" (click)="closeModal()">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      <form (ngSubmit)="onSubmit()" class="modal-form">
+        <div *ngIf="formError" class="form-error">
+          <span class="material-symbols-outlined">error</span>
+          <p>{{ formError }}</p>
+        </div>
+
+        <div class="form-step">
+          <div class="form-step-content">
+            <div class="form-columns">
+              <div class="form-column">
+                <div class="form-group">
+                  <label for="email" class="form-label">Email <span class="required">*</span></label>
+                  <input
+                    type="email"
+                    id="email"
+                    class="form-input"
+                    [(ngModel)]="currentStudent.email"
+                    name="email"
+                    placeholder="prenom.nom@saintjeaningenieur.org"
+                    required
+                    [disabled]="isSubmitting"
+                  />
+                </div>
+
+                <div class="form-group">
+                  <label for="firstName" class="form-label">Prénom <span class="required">*</span></label>
+                  <input
+                    type="text"
+                    id="firstName"
+                    class="form-input"
+                    [(ngModel)]="currentStudent.firstName"
+                    name="firstName"
+                    placeholder="Prénom"
+                    required
+                    [disabled]="isSubmitting"
+                  />
+                </div>
+
+                <div class="form-group">
+                  <label for="lastName" class="form-label">Nom <span class="required">*</span></label>
+                  <input
+                    type="text"
+                    id="lastName"
+                    class="form-input"
+                    [(ngModel)]="currentStudent.lastName"
+                    name="lastName"
+                    placeholder="Nom"
+                    required
+                    [disabled]="isSubmitting"
+                  />
+                </div>
+              </div>
+
+              <div class="form-column">
+                <div class="form-group">
+                  <label for="phone" class="form-label">Téléphone</label>
+                  <input
+                    type="tel"
+                    id="phone"
+                    class="form-input"
+                    [(ngModel)]="currentStudent.phone"
+                    name="phone"
+                    placeholder="Téléphone"
+                    [disabled]="isSubmitting"
+                  />
+                </div>
+
+                <div class="form-group">
+                  <label for="filiereId" class="form-label">Filière</label>
+                  <select
+                    id="filiereId"
+                    class="form-select"
+                    [(ngModel)]="currentStudent.filiereId"
+                    name="filiereId"
+                    (change)="onFiliereChange()"
+                    [disabled]="isSubmitting"
+                  >
+                    <option [value]="undefined">Sélectionner une filière</option>
+                    <option *ngFor="let filiere of filieres" [value]="filiere.idFiliere">
+                      {{ filiere.nom }}
+                    </option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label for="niveau" class="form-label">Niveau</label>
+                  <select
+                    id="niveau"
+                    class="form-select"
+                    [(ngModel)]="currentStudent.niveau"
+                    name="niveau"
+                    [disabled]="isSubmitting"
+                  >
+                    <option [value]="undefined">Sélectionner un niveau</option>
+                    <option *ngFor="let niveau of niveaux" [value]="niveau">
+                      {{ niveau }}
+                    </option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-columns">
+              <div class="form-column">
+                <div class="form-group">
+                  <label for="classeId" class="form-label">Classe</label>
+                  <select
+                    id="classeId"
+                    class="form-select"
+                    [(ngModel)]="currentStudent.classeId"
+                    name="classeId"
+                    [disabled]="isSubmitting || !currentStudent.filiereId"
+                  >
+                    <option [value]="undefined">Sélectionner une classe</option>
+                    <option *ngFor="let classe of classes" [value]="classe.idClasse">
+                      {{ classe.nom }}
+                    </option>
+                  </select>
+                </div>
+              </div>
+              <div class="form-column">
+                <div class="form-group">
+                  <label for="ecoleId" class="form-label">École</label>
+                  <select
+                    id="ecoleId"
+                    class="form-select"
+                    [(ngModel)]="currentStudent.ecoleId"
+                    name="ecoleId"
+                    [disabled]="isSubmitting"
+                  >
+                    <option [value]="undefined">Sélectionner une école</option>
+                    <option *ngFor="let ecole of ecoles" [value]="ecole.idEcole">
+                      {{ ecole.nomEcole }}
+                    </option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button
+            type="button"
+            class="btn btn-secondary"
+            (click)="closeModal()"
+            [disabled]="isSubmitting"
+          >
+            Annuler
+          </button>
+          <button
+            type="submit"
+            class="btn btn-primary"
+            [disabled]="isSubmitting"
+          >
+            <span *ngIf="isSubmitting" class="spinner"></span>
+            <span>{{ isEditing ? 'Mettre à jour' : 'Créer l\'étudiant' }}</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Popup de succès/erreur (réutilisation possible ou toast) -->
+  
+  <app-excel-import
+    [importType]="'students'"
+    [isOpen]="showImportModal"
+    (closeModal)="showImportModal = false"
+    (fileSelected)="onImportFile($event)"
+  ></app-excel-import>
+
+</div>

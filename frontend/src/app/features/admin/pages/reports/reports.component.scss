@@ -1,0 +1,318 @@
+/* Polices chargées globalement via styles.scss */
+/* Header - Les styles du header sont gérés par le composant admin-header via admin-layout */
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.icon-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.notification-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 10px;
+  height: 10px;
+  background: linear-gradient(135deg, #ef4444 0%, #f87171 100%);
+  border-radius: 50%;
+  border: 2px solid var(--white);
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.5);
+  animation: pulse 2s infinite;
+}
+
+.user-profile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px;
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--primary-gradient);
+}
+
+.user-avatar-initials {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: white;
+  flex-shrink: 0;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.user-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.user-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-dark);
+  margin: 0;
+  line-height: 1.2;
+}
+
+.user-email {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.2;
+}
+
+.desktop-only {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .desktop-only {
+    display: block;
+  }
+
+  .mobile-only {
+    display: none;
+  }
+}
+
+.users-page {
+  font-family: 'Inter', sans-serif;
+  flex: 1;
+  padding: 30px;
+  overflow-x: auto;
+  min-width: 0;
+}
+
+/* Layout avec Sidebar */
+.dashboard-layout {
+  display: flex;
+  min-height: 100vh;
+  background: var(--bg-gradient);
+}
+
+.dashboard-container {
+  font-family: 'Inter', sans-serif;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-gradient);
+  overflow-x: auto;
+  min-width: 0;
+}
+
+.dashboard-main {
+  flex: 1;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  overflow-y: auto;
+}
+
+.welcome-text {
+  margin-bottom: 24px;
+}
+
+.welcome-title {
+  font-size: 24px;
+  font-weight: 700;
+  background: var(--primary-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin: 0 0 8px 0;
+  line-height: 1.2;
+}
+
+.welcome-subtitle {
+  font-size: 16px;
+  font-weight: 400;
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.admin-container {
+  max-width: 1400px;
+  width: 100%;
+  margin: 0 auto;
+
+  h1 {
+    background: var(--primary-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 32px;
+    font-size: 32px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+
+  .reports-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 24px;
+    margin-bottom: 32px;
+  }
+
+  .report-card {
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    padding: 24px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: var(--shadow-md);
+
+    .report-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+      background: linear-gradient(135deg, rgba(37, 99, 235, 0.15) 0%, rgba(59, 130, 246, 0.1) 100%);
+      color: var(--primary);
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
+
+      .material-symbols-outlined {
+        font-size: 24px;
+      }
+    }
+
+    .report-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 8px;
+    }
+
+    .report-description {
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin-bottom: 16px;
+    }
+
+    .btn-generate {
+      width: 100%;
+      padding: 10px 16px;
+      background: var(--primary-gradient);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(37, 99, 235, 0.2);
+    }
+  }
+
+  .reports-table-card {
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    padding: 32px;
+    box-shadow: var(--shadow-md);
+    margin-top: 32px;
+
+    .table-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+
+      h2 {
+        font-size: 20px;
+        font-weight: 700;
+        color: var(--text-primary);
+      }
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+
+      thead {
+        background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+
+        th {
+          padding: 16px 20px;
+          text-align: left;
+          font-size: 13px;
+          font-weight: 700;
+          color: var(--text-secondary);
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+        }
+      }
+
+      tbody {
+        tr {
+          border-bottom: 1px solid var(--border-color);
+
+          td {
+            padding: 16px 20px;
+            font-size: 14px;
+            color: var(--text-primary);
+
+            .btn-download {
+              padding: 6px 12px;
+              background: var(--primary-gradient);
+              color: white;
+              border: none;
+              border-radius: 8px;
+              font-size: 12px;
+              font-weight: 600;
+              cursor: pointer;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .admin-container {
+    padding: 24px 16px;
+
+    h1 {
+      font-size: 24px;
+    }
+
+    .reports-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .reports-table-card {
+      padding: 24px;
+      overflow-x: auto;
+    }
+  }
+}
+
+

@@ -1,0 +1,90 @@
+<div class="dashboard-layout">
+  <!-- Sidebar -->
+  <app-sidebar></app-sidebar>
+
+  <!-- Main Content -->
+  <div class="dashboard-container">
+    <!-- Header -->
+    <app-teacher-header pageTitle="Mon Emploi du Temps"></app-teacher-header>
+
+    <!-- Main Content -->
+    <main class="dashboard-main">
+      <div class="calendar-wrapper">
+
+        <!-- Controls Bar -->
+        <div class="controls-bar">
+          <div class="week-navigation">
+            <button class="nav-btn" (click)="previousWeek()">
+              <span class="material-symbols-outlined">chevron_left</span>
+            </button>
+            <div class="week-info">
+              <span class="week-label">Semaine du</span>
+              <span class="week-date">
+                {{ weekStartDate | date: 'd MMM' }} – {{ weekEndDate | date: 'd MMM yyyy' }}
+              </span>
+            </div>
+            <button class="nav-btn" (click)="nextWeek()">
+              <span class="material-symbols-outlined">chevron_right</span>
+            </button>
+            <button class="today-btn" (click)="goToToday()">Aujourd'hui</button>
+          </div>
+        </div>
+
+        <!-- Calendar Grid (flat, identical to admin) -->
+        <div class="calendar-grid">
+
+          <!-- Header Row -->
+          <div class="grid-header time-header">Heure</div>
+          <div class="grid-header" *ngFor="let day of weekDays" [class.today]="day.isToday">
+            <div class="day-header-inner">
+              <span class="dname">{{ day.name }}</span>
+              <span class="ddate">{{ day.date | date: 'd MMM' }}</span>
+            </div>
+          </div>
+
+          <!-- Time slot rows -->
+          <ng-container *ngFor="let timeSlot of timeSlots; last as isLast">
+            <div class="grid-cell time-slot-column" [class.last-slot]="isLast">
+              <span class="time-label">{{ timeSlot.start }} - {{ timeSlot.end }}</span>
+            </div>
+            <div class="grid-cell day-cell"
+                 *ngFor="let day of weekDays; last as isDayLast"
+                 [class.last-slot]="isLast"
+                 [class.last-col]="isDayLast">
+              <div class="event-card miniature"
+                   *ngFor="let event of getEventsForDayAndSlot(day.name, timeSlot)"
+                   [style.background-color]="event.color"
+                   [style.border-color]="event.color"
+                   [style.top.%]="getEventTopInSlot(event, timeSlot)"
+                   [style.height.%]="getEventHeightInSlot(event, timeSlot)">
+                <div class="event-subject">{{ event.title }}</div>
+                <div class="event-info-mini">
+                  <span class="material-symbols-outlined" style="font-size:9px">schedule</span>
+                  {{ event.startTime }} – {{ event.endTime }}
+                </div>
+                <div class="event-room" *ngIf="event.room && event.room !== 'Non définie'">
+                  <span class="material-symbols-outlined" style="font-size:9px">meeting_room</span>
+                  {{ event.room }}
+                </div>
+              </div>
+            </div>
+          </ng-container>
+
+        </div>
+
+        <!-- No Events State -->
+        <div class="no-events" *ngIf="!isLoading && !hasEvents()">
+          <span class="material-symbols-outlined">event_note</span>
+          <p>Aucun cours planifié cette semaine</p>
+        </div>
+
+        <!-- Loading State -->
+        <div class="no-events" *ngIf="isLoading">
+          <span class="material-symbols-outlined">hourglass_empty</span>
+          <p>Chargement de l'emploi du temps...</p>
+        </div>
+
+      </div>
+    </main>
+  </div>
+</div>

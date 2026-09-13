@@ -1,0 +1,85 @@
+spring:
+  application:
+    name: timora-reservation-service
+  data:
+    rest:
+      detection-strategy: annotated
+  config:
+    import: "optional:configserver:"
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/timora_reservation}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  rabbitmq:
+    host: ${SPRING_RABBITMQ_HOST:localhost}
+    port: 5672
+    username: ${RABBITMQ_USER:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_SERVER_URL:http://localhost:8761/eureka}
+    fetch-registry: true
+    register-with-eureka: true
+  instance:
+    prefer-ip-address: true
+    appname: TIMORA-RESERVATION-SERVICE
+    instance-id: ${spring.application.name}:${spring.application.instance-id:${server.port}}
+
+server:
+  port: 8084
+
+feign:
+  client:
+    config:
+      default:
+        connectTimeout: 10000
+        readTimeout: 10000
+        loggerLevel: basic
+      TIMORA-ROOM-SERVICE:
+        connectTimeout: 10000
+        readTimeout: 10000
+        loggerLevel: full
+  hystrix:
+    enabled: false
+  circuitbreaker:
+    enabled: false
+
+logging:
+  level:
+    com.iusjc.timora.reservation.client: DEBUG
+    feign: DEBUG
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    info:
+      enabled: true
+  info:
+    app:
+      name: ${spring.application.name}
+      description: Service de gestion des réservations
+      version: 0.0.1-SNAPSHOT
+
+# Documentation OpenAPI / Swagger
+springdoc:
+  packages-to-scan: com.iusjc.timora.reservation.controller
+  api-docs:
+    path: /v3/api-docs
+    enabled: true
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true
+    operationsSorter: method
+    tagsSorter: alpha

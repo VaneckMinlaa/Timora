@@ -1,0 +1,81 @@
+<div class="verify-code-container">
+  <div class="verify-code-card">
+    <!-- Header -->
+    <div class="header">
+      <h1 class="title">Vérifiez votre email</h1>
+      <p class="subtitle">
+        Nous avons envoyé un code de vérification à<br>
+        <strong>{{ email }}</strong>
+      </p>
+    </div>
+
+    <!-- Form -->
+    <form class="verify-code-form" [formGroup]="verifyCodeForm" (ngSubmit)="onSubmit()">
+      <!-- Code Field - 6 inputs séparés -->
+      <div class="form-group">
+        <label class="form-label">Code de vérification</label>
+        <div class="code-inputs-container">
+          <input
+            *ngFor="let i of [0,1,2,3,4,5]; let idx = index"
+            type="text"
+            [id]="'code-' + idx"
+            [formControlName]="'code' + idx"
+            class="code-input-single"
+            maxlength="1"
+            pattern="[0-9]"
+            (input)="onCodeInput(idx, $event)"
+            (keydown)="onCodeKeyDown(idx, $event)"
+            (paste)="onCodePaste($event)"
+            autocomplete="off"
+            [class.has-error]="code?.invalid && code?.touched"
+          />
+        </div>
+        <div *ngIf="code?.invalid && code?.touched" class="error-text">
+          <span *ngIf="code?.errors?.['required']">Le code est requis</span>
+          <span *ngIf="code?.errors?.['pattern']">Le code doit contenir 6 chiffres</span>
+        </div>
+      </div>
+
+      <!-- Error Message -->
+      <div *ngIf="errorMessage" class="error-message">
+        <span class="material-symbols-outlined">error</span>
+        {{ errorMessage }}
+      </div>
+
+      <!-- Submit Button -->
+      <button type="submit" class="submit-btn" [disabled]="isLoading">
+        <span *ngIf="!isLoading">Vérifier le code</span>
+        <span *ngIf="isLoading" class="btn-loader">
+          <span class="spinner"></span>
+          <span>Vérification...</span>
+        </span>
+      </button>
+    </form>
+
+    <!-- Footer -->
+    <div class="footer">
+      <p class="footer-text">
+        Vous n'avez pas reçu le code ?
+        <button type="button" class="resend-btn" (click)="onResendCode()">
+          Renvoyer le code
+        </button>
+      </p>
+    </div>
+  </div>
+
+  <!-- Popup de validation -->
+  <div *ngIf="showSuccessPopup" class="success-popup">
+    <div class="popup-content">
+      <div class="popup-icon">
+        <span class="material-symbols-outlined">check_circle</span>
+      </div>
+      <div class="popup-text">
+        <h3>Mot de passe réinitialisé !</h3>
+        <p>Un email contenant votre nouveau mot de passe a été envoyé à <strong>{{ email }}</strong></p>
+      </div>
+      <button type="button" class="popup-close" (click)="goToLogin()">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+  </div>
+</div>

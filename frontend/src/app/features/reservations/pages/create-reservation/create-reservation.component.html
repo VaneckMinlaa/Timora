@@ -1,0 +1,143 @@
+<div class="modal-overlay" *ngIf="showReservationModal" (click)="closeReservationModal()">
+  <div class="modal-container" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <div class="header-main">
+        <div class="header-icon">
+          <span class="material-symbols-outlined">{{ useAutoAssignment ? 'auto_awesome' : 'meeting_room' }}</span>
+        </div>
+        <div class="header-text">
+          <h2>{{ useAutoAssignment ? 'Assignation Automatique' : 'Nouvelle Réservation' }}</h2>
+          <p>{{ useAutoAssignment ? 'IA Timora : Optimisation de l\'espace' : 'Sélection manuelle d\'une salle' }}</p>
+        </div>
+      </div>
+      <button class="close-header-btn" (click)="closeReservationModal()">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+
+    <!-- Sélecteur de Mode -->
+    <div class="assignment-mode-toggle">
+      <button class="mode-btn" [class.active]="useAutoAssignment" (click)="toggleAutoAssignment(true)">
+        <span class="material-symbols-outlined">auto_fix</span>
+        <span>Assignation Auto</span>
+      </button>
+      <button class="mode-btn" [class.active]="!useAutoAssignment" (click)="toggleAutoAssignment(false)">
+        <span class="material-symbols-outlined">edit_square</span>
+        <span>Choix Manuel</span>
+      </button>
+    </div>
+
+    <div class="modal-body scrollable">
+      <div class="reservation-form">
+        <!-- Message d'erreur -->
+        <div class="alert alert-error" *ngIf="reservationError">
+          <span class="material-symbols-outlined">error</span>
+          <span>{{ reservationError }}</span>
+        </div>
+
+        <!-- Section: Salle (Manuelle) -->
+        <div class="form-group" *ngIf="!useAutoAssignment">
+          <label class="form-label">Salle *</label>
+          <select class="form-input" [(ngModel)]="reservationForm.roomId" (change)="onDateTimeChange()">
+            <option value="">Sélectionner une salle</option>
+            <option *ngFor="let room of filteredRooms"
+                    [value]="room.id || room.idSalle"
+                    [class.option-available]="isRoomAvailable(room.id || room.idSalle || '')"
+                    [class.option-unavailable]="!isRoomAvailable(room.id || room.idSalle || '') && reservationForm.date && reservationForm.startTime && reservationForm.endTime">
+              {{ getRoomOptionLabel(room) }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Date *</label>
+            <input type="date" class="form-input" [(ngModel)]="reservationForm.date" (change)="onDateTimeChange()" required />
+          </div>
+
+          <div class="form-group" *ngIf="!useAutoAssignment">
+            <label class="form-label">Équipement (Optionnel)</label>
+            <select class="form-input" [(ngModel)]="reservationForm.equipementId">
+              <option value="">Aucun équipement</option>
+              <option *ngFor="let equipement of equipements" [value]="equipement.idEquip">
+                {{ equipement.nom }} ({{ equipement.categorie }})
+              </option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Heure de début *</label>
+            <input type="time" class="form-input" [(ngModel)]="reservationForm.startTime" (change)="onDateTimeChange()" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Heure de fin *</label>
+            <input type="time" class="form-input" [(ngModel)]="reservationForm.endTime" (change)="onDateTimeChange()" required />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Motif / Cours *</label>
+            <input type="text" class="form-input" [(ngModel)]="reservationForm.purpose" placeholder="Ex: Cours de Java, Réunion..." required />
+          </div>
+          <div class="form-group" *ngIf="useAutoAssignment">
+            <label class="form-label">Type de Cours *</label>
+            <select class="form-input" [(ngModel)]="reservationForm.typeCours" required>
+              <option value="">Sélectionner un type</option>
+              <option value="COURS_MAGISTRAL">Cours Magistral</option>
+              <option value="TD">Travaux Dirigés (TD)</option>
+              <option value="TP">Travaux Pratiques (TP)</option>
+              <option value="EXAMEN">Examen</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Nombre de participants *</label>
+          <input type="number" class="form-input" [(ngModel)]="reservationForm.numberOfParticipants" min="1" required />
+        </div>
+
+        <!-- Section: Suggestions d'IA (si assignation auto) -->
+        <div class="ai-suggestions-section" *ngIf="useAutoAssignment && (reservationForm.date && reservationForm.startTime && reservationForm.endTime)">
+          <div class="section-header-mini">
+            <span class="material-symbols-outlined">tips_and_updates</span>
+            <h3>Salles Recommandées</h3>
+            <div class="badge badge-ai" *ngIf="isSearchingSuggestions">Analyse en cours...</div>
+          </div>
+
+          <div class="suggestions-grid" *ngIf="!isSearchingSuggestions && roomSuggestions.length > 0">
+            <div class="suggestion-card" 
+                 *ngFor="let suggestion of roomSuggestions" 
+                 [class.selected]="reservationForm.roomId === suggestion.roomId"
+                 (click)="selectSuggestion(suggestion)">
+              <div class="suggestion-info">
+                <span class="room-name">{{ suggestion.roomName }}</span>
+                <span class="room-meta">{{ suggestion.roomType }} • {{ suggestion.capacity }} places</span>
+              </div>
+              <div class="suggestion-badge" [class.success]="suggestion.suitable">
+                {{ suggestion.suitable ? 'Recommandé' : 'Non adapté' }}
+              </div>
+            </div>
+          </div>
+
+          <div class="empty-suggestions" *ngIf="!isSearchingSuggestions && roomSuggestions.length === 0">
+            <p>Veuillez remplir tous les champs obligatoires pour voir des suggestions.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-cancel" (click)="closeReservationModal()">Annuler</button>
+      <button class="btn-confirm" 
+              (click)="createReservation()" 
+              [disabled]="isSubmittingReservation || !isFormValid()">
+        <span class="material-symbols-outlined" *ngIf="!isSubmittingReservation">{{ useAutoAssignment ? 'auto_fix' : 'done_all' }}</span>
+        <span class="spinner" *ngIf="isSubmittingReservation"></span>
+        <span>{{ isSubmittingReservation ? 'Création...' : (useAutoAssignment ? 'Générer avec IA' : 'Confirmer') }}</span>
+      </button>
+    </div>
+  </div>
+</div>

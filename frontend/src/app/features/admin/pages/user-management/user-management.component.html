@@ -1,0 +1,528 @@
+<div class="users-layout" (click)="closeDropdowns()">
+  <!-- Main Content -->
+  <div class="users-container">
+    <!-- Main Content -->
+    <main class="users-page">
+      <!-- Search and Filters -->
+  <div class="filters-section">
+    <div class="search-wrapper horizontal-actions">
+      <div class="search-box">
+        <div class="search-icon">
+          <span class="material-symbols-outlined">search</span>
+        </div>
+        <input
+          type="text"
+          class="search-input"
+          placeholder="Rechercher par nom, email..."
+          [(ngModel)]="searchTerm"
+          (input)="onSearch()"
+        />
+      </div>
+
+      <button class="add-btn" (click)="onAddUser()">
+        <span class="material-symbols-outlined">add</span>
+        <span>Ajouter un utilisateur</span>
+      </button>
+    </div>
+
+    <div class="filter-buttons" (click)="$event.stopPropagation()">
+      <!-- Dropdown Rôle -->
+      <div class="filter-dropdown-wrapper">
+        <button class="filter-btn" (click)="toggleRoleFilter(); $event.stopPropagation()" [class.active]="showRoleDropdown || selectedRole">
+          <span>Rôle: {{ getSelectedRoleLabel() }}</span>
+          <span class="material-symbols-outlined" [class.rotated]="showRoleDropdown">expand_more</span>
+        </button>
+        <div *ngIf="showRoleDropdown" class="dropdown-menu" (click)="$event.stopPropagation()">
+          <button
+            *ngFor="let option of roleOptions"
+            class="dropdown-item"
+            [class.active]="selectedRole === option.value"
+            (click)="selectRole(option.value)"
+          >
+            {{ option.label }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Dropdown Statut -->
+      <div class="filter-dropdown-wrapper">
+        <button class="filter-btn" (click)="toggleStatusFilter(); $event.stopPropagation()" [class.active]="showStatusDropdown || selectedStatus">
+          <span>Statut: {{ getSelectedStatusLabel() }}</span>
+          <span class="material-symbols-outlined" [class.rotated]="showStatusDropdown">expand_more</span>
+        </button>
+        <div *ngIf="showStatusDropdown" class="dropdown-menu" (click)="$event.stopPropagation()">
+          <button
+            *ngFor="let option of statusOptions"
+            class="dropdown-item"
+            [class.active]="selectedStatus === option.value"
+            (click)="selectStatus(option.value)"
+          >
+            {{ option.label }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Dropdown École -->
+      <div class="filter-dropdown-wrapper">
+        <button class="filter-btn" (click)="toggleSchoolFilter(); $event.stopPropagation()" [class.active]="showSchoolDropdown || selectedSchool">
+          <span>École: {{ getSelectedSchoolLabel() }}</span>
+          <span class="material-symbols-outlined" [class.rotated]="showSchoolDropdown">expand_more</span>
+        </button>
+        <div *ngIf="showSchoolDropdown" class="dropdown-menu" (click)="$event.stopPropagation()">
+          <button
+            *ngFor="let option of schoolOptions"
+            class="dropdown-item"
+            [class.active]="selectedSchool === option.value"
+            (click)="selectSchool(option.value)"
+          >
+            {{ option.label }}
+          </button>
+        </div>
+      </div>
+
+      <button class="reset-btn" (click)="resetFilters(); $event.stopPropagation()">
+        <span class="material-symbols-outlined">filter_list_off</span>
+        <span class="reset-text">Réinitialiser</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="loading-container">
+    <div class="loading-spinner">
+      <span class="spinner"></span>
+      <p>Chargement des utilisateurs...</p>
+    </div>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="error && !isLoading" class="error-container">
+    <div class="error-message">
+      <span class="material-symbols-outlined">error</span>
+      <p>{{ error }}</p>
+      <button class="retry-btn" (click)="loadUsers()">Réessayer</button>
+    </div>
+  </div>
+
+  <!-- Users Table -->
+  <div *ngIf="!isLoading && !error" class="table-container">
+    <div class="table-wrapper">
+      <table class="timora-table">
+        <thead>
+         <tr>
+           <th>Nom complet</th>
+           <th>Email</th>
+           <th>Rôle</th>
+           <th>Dernière connexion</th>
+           <th>Statut</th>
+           <th>Actions</th>
+         </tr>
+        </thead>
+        <tbody>
+        <tr *ngFor="let user of paginatedUsers; let i = index" [class.table-row-even]="i % 2 === 0" [class.table-row-odd]="i % 2 === 1">
+          <td class="font-medium">
+            <div class="user-name-cell">
+              <div class="user-avatar-initials" [style.background-color]="getUserAvatarColor(user.firstName, user.lastName)">
+                {{ getUserInitials(user.firstName, user.lastName) }}
+              </div>
+              <span>{{ getFullName(user) }}</span>
+            </div>
+          </td>
+           <td class="text-secondary">{{ user.email }}</td>
+           <td class="text-secondary">{{ getRoleLabel(user.role) }}</td>
+           <td class="text-secondary">{{ user.lastLogin ? formatDate(user.lastLogin) : 'Jamais' }}</td>
+          <td>
+              <span
+                class="status-badge"
+                [class.status-active]="user.status === 'Actif'"
+                [class.status-inactive]="user.status === 'Inactif'"
+              >
+                {{ user.status }}
+              </span>
+          </td>
+          <td>
+            <div class="action-buttons">
+              <button
+                class="action-btn status-btn"
+                [title]="user.isActive ? 'Désactiver' : 'Activer'"
+                (click)="user.isActive ? deactivateUser(user) : activateUser(user)"
+                [disabled]="isLoading"
+              >
+                <span class="material-symbols-outlined">
+                  {{ user.isActive ? 'block' : 'check_circle' }}
+                </span>
+              </button>
+              <button
+                class="action-btn edit-btn"
+                title="Éditer"
+                (click)="onEditUser(user)"
+                [disabled]="isLoading"
+              >
+                <span class="material-symbols-outlined">edit</span>
+              </button>
+            </div>
+          </td>
+        </tr>
+         <tr *ngIf="paginatedUsers.length === 0 && !isLoading && filteredUsers.length === 0">
+           <td colspan="6" class="no-data">Aucun utilisateur trouvé</td>
+         </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Pagination -->
+  <div class="timora-pagination" *ngIf="!isLoading && !error">
+    <p class="pagination-info">
+      Affichage de <span>{{ startIndex }}</span> à
+      <span>{{ endIndex }}</span> sur
+      <span>{{ totalUsers }}</span> résultats
+    </p>
+    <nav class="pagination-nav">
+      <button class="page-btn" (click)="previousPage()" [disabled]="currentPage === 1">
+        <span class="material-symbols-outlined">chevron_left</span>
+      </button>
+      <button
+        *ngFor="let page of visiblePages"
+        class="page-btn"
+        [class.active]="page === currentPage"
+        (click)="goToPage(page)"
+      >
+        {{ page }}
+      </button>
+      <button class="page-btn" (click)="nextPage()" [disabled]="currentPage === totalPages">
+        <span class="material-symbols-outlined">chevron_right</span>
+      </button>
+    </nav>
+  </div>
+    </main>
+  </div>
+
+  <!-- Modal d'ajout d'utilisateur -->
+  <div *ngIf="showAddModal" class="modal-overlay" (click)="closeAddModal(); closeDropdowns()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <!--<div class="modal-header">
+        <h2 class="modal-title">Ajouter un utilisateur</h2>
+        <button class="modal-close-btn" (click)="closeAddModal()" type="button">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>-->
+
+      <form (ngSubmit)="onSubmitAddUser()" class="modal-form">
+        <!-- Message d'erreur du formulaire -->
+        <div *ngIf="formError" class="form-error">
+          <span class="material-symbols-outlined">error</span>
+          <p>{{ formError }}</p>
+        </div>
+
+        <!-- Formulaire unique -->
+        <div class="form-step">
+          <div class="form-step-content">
+            <div class="form-columns">
+              <!-- Colonne 1 -->
+              <div class="form-column">
+                <!-- Email -->
+                <div class="form-group">
+                  <label for="email" class="form-label">Email <span class="required">*</span></label>
+                  <input
+                    type="email"
+                    id="email"
+                    class="form-input"
+                    [(ngModel)]="newUser.email"
+                    name="email"
+                    placeholder="exemple@saintjeaningenieur.org"
+                    required
+                    [disabled]="isSubmitting"
+                  />
+                </div>
+
+                <!-- Prénom -->
+                <div class="form-group">
+                  <label for="firstName" class="form-label">Prénom <span class="required">*</span></label>
+                  <input
+                    type="text"
+                    id="firstName"
+                    class="form-input"
+                    [(ngModel)]="newUser.firstName"
+                    name="firstName"
+                    placeholder="Vaneck"
+                    required
+                    [disabled]="isSubmitting"
+                  />
+                </div>
+
+                <!-- Nom -->
+                <div class="form-group">
+                  <label for="lastName" class="form-label">Nom <span class="required">*</span></label>
+                  <input
+                    type="text"
+                    id="lastName"
+                    class="form-input"
+                    [(ngModel)]="newUser.lastName"
+                    name="lastName"
+                    placeholder="Minlaa"
+                    required
+                    [disabled]="isSubmitting"
+                  />
+                </div>
+              </div>
+
+              <!-- Colonne 2 -->
+              <div class="form-column">
+                <!-- Téléphone -->
+                <div class="form-group">
+                  <label for="phone" class="form-label">Téléphone</label>
+                  <input
+                    type="tel"
+                    id="phone"
+                    class="form-input"
+                    [(ngModel)]="newUser.phone"
+                    name="phone"
+                    placeholder="+237 690 123 456"
+                    [disabled]="isSubmitting"
+                  />
+                </div>
+
+                <!-- Rôle -->
+                <div class="form-group">
+                  <label for="role" class="form-label">Rôle <span class="required">*</span></label>
+                  <select
+                    id="role"
+                    class="form-select"
+                    [(ngModel)]="newUser.role"
+                    name="role"
+                    required
+                    [disabled]="isSubmitting"
+                  >
+                    <option value="TEACHER">Enseignant</option>
+                    <option value="ADMIN">Administrateur</option>
+                  </select>
+                </div>
+
+                <!-- Département (uniquement pour les administrateurs) -->
+                <div class="form-group" *ngIf="newUser.role === 'ADMIN'">
+                  <label for="department" class="form-label">Département</label>
+                  <input
+                    type="text"
+                    id="department"
+                    class="form-input"
+                    [(ngModel)]="newUser.department"
+                    name="department"
+                    placeholder="Informatique"
+                    [disabled]="isSubmitting"
+                  />
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Boutons de navigation -->
+        <div class="modal-actions">
+          <button
+            type="button"
+            class="btn btn-secondary"
+            (click)="closeAddModal()"
+            [disabled]="isSubmitting"
+          >
+            Annuler
+          </button>
+
+          <div class="form-navigation">
+            <button
+              type="submit"
+              class="btn btn-primary"
+              [disabled]="isSubmitting"
+            >
+              <span *ngIf="isSubmitting" class="spinner"></span>
+              <span *ngIf="!isSubmitting" class="material-symbols-outlined">person_add</span>
+              <span *ngIf="!isSubmitting">Créer l'utilisateur</span>
+              <span *ngIf="isSubmitting">Création en cours...</span>
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal d'édition d'utilisateur -->
+  <div *ngIf="showEditModal" class="modal-overlay" (click)="closeEditModal(); closeDropdowns()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <form (ngSubmit)="onSubmitEditUser()" class="modal-form">
+        <!-- Message d'erreur du formulaire -->
+        <div *ngIf="editFormError" class="form-error">
+          <span class="material-symbols-outlined">error</span>
+          <p>{{ editFormError }}</p>
+        </div>
+
+        <!-- Indicateur d'étapes -->
+        <div class="form-steps-indicator">
+          <div class="step-indicator" [class.active]="editFormStep === 1" [class.completed]="editFormStep > 1">
+            <div class="step-number">1</div>
+            <div class="step-label">Informations personnelles</div>
+          </div>
+          <div class="step-indicator" [class.active]="editFormStep === 2" [class.completed]="editFormStep > 2">
+            <div class="step-number">2</div>
+            <div class="step-label">Informations complémentaires</div>
+          </div>
+        </div>
+
+        <!-- Étape 1: Informations personnelles -->
+        <div class="form-step" *ngIf="editFormStep === 1">
+          <div class="form-step-content">
+            <div class="form-columns">
+              <!-- Colonne 1 -->
+              <div class="form-column">
+                <!-- Prénom -->
+                <div class="form-group">
+                  <label for="editFirstName" class="form-label">Prénom <span class="required">*</span></label>
+                  <input
+                    type="text"
+                    id="editFirstName"
+                    class="form-input"
+                    [(ngModel)]="editUserForm.firstName"
+                    name="editFirstName"
+                    placeholder="Jean"
+                    required
+                    [disabled]="isSubmittingEdit"
+                  />
+                </div>
+
+                <!-- Nom -->
+                <div class="form-group">
+                  <label for="editLastName" class="form-label">Nom <span class="required">*</span></label>
+                  <input
+                    type="text"
+                    id="editLastName"
+                    class="form-input"
+                    [(ngModel)]="editUserForm.lastName"
+                    name="editLastName"
+                    placeholder="Dupont"
+                    required
+                    [disabled]="isSubmittingEdit"
+                  />
+                </div>
+              </div>
+
+              <!-- Colonne 2 -->
+              <div class="form-column">
+                <!-- Téléphone -->
+                <div class="form-group">
+                  <label for="editPhone" class="form-label">Téléphone</label>
+                  <input
+                    type="tel"
+                    id="editPhone"
+                    class="form-input"
+                    [(ngModel)]="editUserForm.phone"
+                    name="editPhone"
+                    placeholder="+237 690 123 456"
+                    [disabled]="isSubmittingEdit"
+                  />
+                </div>
+
+                <!-- Département (uniquement pour les administrateurs) -->
+                <div class="form-group" *ngIf="editingUser?.role === 'ADMIN'">
+                  <label for="editDepartment" class="form-label">Département</label>
+                  <input
+                    type="text"
+                    id="editDepartment"
+                    class="form-input"
+                    [(ngModel)]="editUserForm.department"
+                    name="editDepartment"
+                    placeholder="Informatique"
+                    [disabled]="isSubmittingEdit"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Étape 2: Informations complémentaires -->
+        <div class="form-step" *ngIf="editFormStep === 2">
+          <div class="form-step-content">
+            <div class="form-columns">
+              <!-- Colonne 1 -->
+              <div class="form-column">
+              </div>
+
+              <!-- Colonne 2 -->
+              <div class="form-column">
+                <!-- Informations supplémentaires -->
+                <div class="form-group">
+                  <label class="form-label">Email</label>
+                  <input
+                    type="email"
+                    class="form-input"
+                    [value]="editingUser?.email"
+                    disabled
+                  />
+                  <p class="form-hint">L'email ne peut pas être modifié</p>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">Rôle</label>
+                  <input
+                    type="text"
+                    class="form-input"
+                    [value]="getRoleLabel(editingUser?.role || '')"
+                    disabled
+                  />
+                  <p class="form-hint">Le rôle ne peut pas être modifié</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Boutons de navigation -->
+        <div class="modal-actions">
+          <button
+            type="button"
+            class="btn btn-secondary"
+            (click)="closeEditModal()"
+            [disabled]="isSubmittingEdit"
+          >
+            Annuler
+          </button>
+
+          <div class="form-navigation">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              (click)="previousEditStep()"
+              [disabled]="editFormStep === 1 || isSubmittingEdit"
+              *ngIf="editFormStep > 1"
+            >
+              <span class="material-symbols-outlined">arrow_back</span>
+              Précédent
+            </button>
+
+            <button
+              type="button"
+              class="btn btn-primary"
+              (click)="nextEditStep()"
+              [disabled]="isSubmittingEdit"
+              *ngIf="editFormStep < totalFormSteps"
+            >
+              Suivant
+              <span class="material-symbols-outlined">arrow_forward</span>
+            </button>
+
+            <button
+              type="submit"
+              class="btn btn-primary"
+              [disabled]="isSubmittingEdit"
+              *ngIf="editFormStep === totalFormSteps"
+            >
+              <span *ngIf="isSubmittingEdit" class="spinner"></span>
+              <span *ngIf="!isSubmittingEdit">Mettre à jour</span>
+              <span *ngIf="isSubmittingEdit">Mise à jour en cours...</span>
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

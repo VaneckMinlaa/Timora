@@ -1,0 +1,112 @@
+<div *ngIf="isOpen" class="modal-overlay" (click)="close()">
+  <div class="import-modal" (click)="$event.stopPropagation()">
+
+    <!-- Header -->
+    <div class="import-header">
+      <div class="import-header-content">
+        <div class="import-icon">
+          <span class="material-symbols-outlined">upload_file</span>
+        </div>
+        <div>
+          <h2 class="import-title">{{ title }}</h2>
+          <p class="import-subtitle">Importez vos données depuis un fichier Excel (.xlsx)</p>
+        </div>
+      </div>
+      <button class="close-btn" (click)="close()">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+
+    <!-- Format Guide -->
+    <div class="format-guide">
+      <div class="guide-header">
+        <span class="material-symbols-outlined">info</span>
+        <span>Format attendu — Ligne 1 = En-têtes (ignorée), les données commencent à la ligne 2</span>
+      </div>
+      <div class="columns-grid">
+        <div *ngFor="let col of columnsDescription" class="column-item">
+          <span class="col-badge">{{ col.col }}</span>
+          <span class="col-desc">{{ col.desc }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Drop Zone -->
+    <div
+      class="drop-zone"
+      [class.dragging]="isDragging"
+      [class.has-file]="selectedFile"
+      (dragover)="onDragOver($event)"
+      (dragleave)="onDragLeave($event)"
+      (drop)="onDrop($event)"
+    >
+      <input
+        type="file"
+        id="excel-file-input"
+        accept=".xlsx"
+        (change)="onFileChange($event)"
+        style="display: none"
+      />
+
+      <ng-container *ngIf="!selectedFile">
+        <div class="drop-icon">
+          <span class="material-symbols-outlined">cloud_upload</span>
+        </div>
+        <p class="drop-title">Glissez-déposez votre fichier ici</p>
+        <p class="drop-subtitle">ou</p>
+        <label for="excel-file-input" class="browse-btn">
+          <span class="material-symbols-outlined">folder_open</span>
+          Parcourir les fichiers
+        </label>
+        <p class="drop-hint">Formats acceptés : .xlsx uniquement</p>
+      </ng-container>
+
+      <ng-container *ngIf="selectedFile">
+        <div class="file-info">
+          <div class="file-icon">
+            <span class="material-symbols-outlined">description</span>
+          </div>
+          <div class="file-details">
+            <p class="file-name">{{ selectedFile.name }}</p>
+            <p class="file-size">{{ (selectedFile.size / 1024).toFixed(1) }} KB</p>
+          </div>
+          <button class="remove-file-btn" (click)="resetFile(); $event.stopPropagation()">
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        </div>
+      </ng-container>
+    </div>
+
+    <!-- Error -->
+    <div *ngIf="importError" class="import-error">
+      <span class="material-symbols-outlined">error_outline</span>
+      <p>{{ importError }}</p>
+    </div>
+
+    <!-- Success -->
+    <div *ngIf="importResult" class="import-success">
+      <span class="material-symbols-outlined">check_circle</span>
+      <div>
+        <p class="success-message">{{ importResult.message }}</p>
+        <p class="success-count">{{ importResult.count }} enregistrement(s) importé(s)</p>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="import-actions">
+      <button class="btn btn-secondary" (click)="close()" [disabled]="isUploading">
+        Annuler
+      </button>
+      <button
+        class="btn btn-primary"
+        [disabled]="!selectedFile || isUploading || !!importResult"
+        (click)="onImport()"
+      >
+        <span *ngIf="isUploading" class="spinner-small"></span>
+        <span class="material-symbols-outlined" *ngIf="!isUploading">upload</span>
+        {{ isUploading ? 'Importation...' : 'Importer' }}
+      </button>
+    </div>
+
+  </div>
+</div>

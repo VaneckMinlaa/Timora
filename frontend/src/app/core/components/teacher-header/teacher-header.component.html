@@ -1,0 +1,26 @@
+<header class="dashboard-header">
+  <div class="header-left">
+    <button class="menu-btn mobile-only" (click)="toggleSidebar()">
+      <span class="material-symbols-outlined">menu</span>
+    </button>
+  </div>
+  <div class="header-actions">
+    <button class="icon-btn" (click)="onSearch()">
+      <span class="material-symbols-outlined">search</span>
+    </button>
+    <button class="icon-btn notification-btn" (click)="onNotifications()" title="Notifications">
+      <span class="material-symbols-outlined">notifications</span>
+      <span class="notification-badge" *ngIf="unreadCount > 0">{{ unreadCount }}</span>
+    </button>
+    <div class="user-profile" (click)="goToProfile()">
+      <div class="user-avatar-initials" [style.background-color]="avatarColor">
+        {{ userInitials }}
+      </div>
+      <div class="user-info desktop-only">
+        <p class="user-name">{{ userDisplayName }}</p>
+        <p class="user-email">{{ userEmail }}</p>
+      </div>
+    </div>
+  </div>
+</header>
+

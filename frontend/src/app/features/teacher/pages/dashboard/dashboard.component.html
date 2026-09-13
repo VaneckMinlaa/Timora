@@ -1,0 +1,187 @@
+<div class="dashboard-layout">
+  <!-- Sidebar -->
+  <app-sidebar></app-sidebar>
+
+  <!-- Main Content -->
+  <div class="dashboard-container">
+    <!-- Header -->
+    <app-teacher-header pageTitle="Mon Tableau de Bord"></app-teacher-header>
+
+    <!-- Main Content -->
+    <main class="dashboard-main">
+      <!-- Loading State -->
+      <div *ngIf="isLoading" class="loading-state">
+        <div class="spinner"></div>
+        <p>Chargement de votre tableau de bord...</p>
+      </div>
+
+      <!-- Dashboard Content -->
+      <div *ngIf="!isLoading" class="dashboard-content">
+        <!-- Key Metrics Section -->
+        <section class="metrics-section">
+          <h2>Statistiques</h2>
+          <div class="metrics-grid">
+            <!-- Total Reservations -->
+            <div class="metric-card">
+              <div class="metric-header">
+                <h3>Réservations</h3>
+                <span class="material-symbols-outlined">event_note</span>
+              </div>
+              <div class="metric-value">{{ stats.totalReservations }}</div>
+              <div class="metric-trend" [class.positive]="stats.reservationsTrend >= 0">
+                <span class="material-symbols-outlined">{{ stats.reservationsTrend >= 0 ? 'trending_up' : 'trending_down' }}</span>
+                {{ stats.reservationsTrend >= 0 ? '+' : '' }}{{ stats.reservationsTrend }}%
+              </div>
+            </div>
+
+            <!-- Total Courses -->
+            <div class="metric-card">
+              <div class="metric-header">
+                <h3>Cours Planifiés</h3>
+                <span class="material-symbols-outlined">school</span>
+              </div>
+              <div class="metric-value">{{ stats.totalCourses }}</div>
+              <div class="metric-trend" [class.positive]="stats.coursesTrend >= 0">
+                <span class="material-symbols-outlined">{{ stats.coursesTrend >= 0 ? 'trending_up' : 'trending_down' }}</span>
+                {{ stats.coursesTrend >= 0 ? '+' : '' }}{{ stats.coursesTrend }}%
+              </div>
+            </div>
+
+            <!-- Total Conflicts -->
+            <div class="metric-card">
+              <div class="metric-header">
+                <h3>Conflits</h3>
+                <span class="material-symbols-outlined">warning</span>
+              </div>
+              <div class="metric-value">{{ stats.totalConflicts }}</div>
+              <div class="metric-trend" [class.negative]="stats.conflictsTrend > 0">
+                <span class="material-symbols-outlined">{{ stats.conflictsTrend > 0 ? 'trending_up' : 'trending_down' }}</span>
+                {{ stats.conflictsTrend > 0 ? '+' : '' }}{{ stats.conflictsTrend }}%
+              </div>
+            </div>
+
+            <!-- Planned Hours -->
+            <div class="metric-card">
+              <div class="metric-header">
+                <h3>Heures Prévues</h3>
+                <span class="material-symbols-outlined">schedule</span>
+              </div>
+              <div class="metric-value">{{ stats.plannedHours }}</div>
+              <div class="metric-trend" [class.positive]="stats.plannedHoursTrend >= 0">
+                <span class="material-symbols-outlined">{{ stats.plannedHoursTrend >= 0 ? 'trending_up' : 'trending_down' }}</span>
+                {{ stats.plannedHoursTrend >= 0 ? '+' : '' }}{{ stats.plannedHoursTrend }}%
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Charts Section -->
+        <section class="charts-section">
+          <div class="charts-grid">
+            <!-- Bar Chart: Occupancy -->
+            <div class="chart-card">
+              <h3>Occupancy par Heure</h3>
+              <div class="chart-container">
+                <apx-chart 
+                  [series]="barChartSeries" 
+                  [chart]="barChartConfig.chart"
+                  [xaxis]="barChartConfig.xaxis"
+                  [yaxis]="barChartConfig.yaxis"
+                  [colors]="barChartConfig.colors"
+                  [grid]="barChartConfig.grid"
+                  [dataLabels]="barChartConfig.dataLabels">
+                </apx-chart>
+              </div>
+            </div>
+
+            <!-- Donut Chart: Conflicts by Type -->
+            <div class="chart-card">
+              <h3>Conflits par Type</h3>
+              <div class="chart-container">
+                <apx-chart 
+                  [series]="donutChartSeries" 
+                  [chart]="donutChartConfig.chart"
+                  [labels]="donutChartLabels"
+                  [colors]="donutChartConfig.colors"
+                  [legend]="donutChartConfig.legend"
+                  [plotOptions]="donutChartConfig.plotOptions">
+                </apx-chart>
+              </div>
+            </div>
+
+            <!-- Area Chart: Trend -->
+            <div class="chart-card full-width">
+              <h3>Tendance Hebdomadaire</h3>
+              <div class="chart-container">
+                <apx-chart 
+                  [series]="areaChartSeries" 
+                  [chart]="areaChartConfig.chart"
+                  [xaxis]="areaChartConfig.xaxis"
+                  [yaxis]="areaChartConfig.yaxis"
+                  [colors]="areaChartConfig.colors"
+                  [grid]="areaChartConfig.grid"
+                  [stroke]="areaChartConfig.stroke"
+                  [fill]="areaChartConfig.fill">
+                </apx-chart>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Upcoming Events -->
+        <section class="upcoming-section">
+          <div class="upcoming-grid">
+            <!-- My Reservations -->
+            <div class="upcoming-card">
+              <div class="card-header">
+                <h3>Mes Réservations à Venir</h3>
+                <span class="material-symbols-outlined">event</span>
+              </div>
+              <div class="events-list">
+                <div *ngIf="upcomingReservations.length === 0" class="empty-state">
+                  <p>Aucune réservation prevue</p>
+                </div>
+                <div *ngFor="let reservation of upcomingReservations.slice(0, 5)" class="event-item">
+                  <div class="event-time">
+                    <span class="time-badge">{{ reservation.startDateTime | date: 'HH:mm' }}</span>
+                  </div>
+                  <div class="event-info">
+                    <div class="event-title">{{ reservation.salleNom }}</div>
+                    <div class="event-duration">
+                      {{ reservation.startDateTime | date: 'dd MMM' : undefined : 'fr' }} - 
+                      {{ getReservationDuration(reservation.startDateTime, reservation.endDateTime) }} min
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- My Courses -->
+            <div class="upcoming-card">
+              <div class="card-header">
+                <h3>Mes Cours à Venir</h3>
+                <span class="material-symbols-outlined">school</span>
+              </div>
+              <div class="events-list">
+                <div *ngIf="upcomingCourses.length === 0" class="empty-state">
+                  <p>Aucun cours planifié</p>
+                </div>
+                <div *ngFor="let course of upcomingCourses.slice(0, 5)" class="event-item">
+                  <div class="event-time">
+                    <span class="time-badge">{{ course.heureDebut }}</span>
+                  </div>
+                  <div class="event-info">
+                    <div class="event-title">{{ course.nom }}</div>
+                    <div class="event-duration">
+                      {{ course.jourSemaine }} - {{ course.heureDebut }} à {{ course.heureFin }}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+</div>

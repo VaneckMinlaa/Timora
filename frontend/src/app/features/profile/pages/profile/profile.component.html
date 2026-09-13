@@ -1,0 +1,219 @@
+<div class="dashboard-layout">
+  <!-- Sidebar -->
+  <app-sidebar></app-sidebar>
+
+  <!-- Main Content -->
+  <div class="dashboard-container">
+    <!-- Header -->
+    <app-teacher-header *ngIf="isTeacher" pageTitle="Mon Profil"></app-teacher-header>
+    <app-admin-header *ngIf="isAdmin"></app-admin-header>
+
+    <!-- Main Content -->
+    <main class="dashboard-main">
+      <!-- Welcome Text hidden per design spec -->
+
+      <div class="profile-content">
+        <!-- Section Upload Photo -->
+        <div class="upload-photo-section">
+          <h3 class="section-title">Téléverser une nouvelle photo</h3>
+          <div class="upload-content">
+            <div class="photo-preview">
+              <img
+                *ngIf="profilePhotoUrl"
+                [src]="profilePhotoUrl"
+                [alt]="currentUser?.firstName + ' ' + currentUser?.lastName"
+                class="profile-photo"
+              />
+              <div
+                *ngIf="!profilePhotoUrl"
+                class="profile-avatar-initials"
+                [style.background-color]="avatarColor"
+              >
+                {{ userInitials }}
+              </div>
+            </div>
+            <div class="upload-info">
+              <p class="upload-title">Téléverser une nouvelle photo</p>
+              <p class="file-name">{{ profilePhotoFileName }}</p>
+            </div>
+            <div class="upload-actions">
+              <input
+                type="file"
+                id="photo-upload"
+                accept="image/*"
+                (change)="onPhotoSelected($event)"
+                style="display: none;"
+              />
+              <small class="form-hint" style="display: block; margin-top: 8px; color: var(--text-secondary);">
+                Taille maximale : 10 Mo
+              </small>
+              <label for="photo-upload" class="btn-select-photo">
+                Sélectionner
+              </label>
+              <button
+                class="btn-update"
+                [disabled]="!profilePhotoFile || isUpdatingPhoto"
+                (click)="updatePhoto()"
+              >
+                <span *ngIf="!isUpdatingPhoto">Mettre à jour</span>
+                <span *ngIf="isUpdatingPhoto">Mise à jour...</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sections côte à côte -->
+        <div class="sections-row">
+          <!-- Section User Information Form -->
+          <div class="user-info-section">
+            <h3 class="section-title">Modifier les informations utilisateur</h3>
+
+            <!-- Messages de succès/erreur -->
+            <div *ngIf="updateSuccess" class="alert alert-success">
+              Informations mises à jour avec succès !
+            </div>
+            <div *ngIf="updateError" class="alert alert-error">
+              {{ updateError }}
+            </div>
+
+            <form [formGroup]="userInfoForm" (ngSubmit)="updateUserInfo()">
+              <div class="form-grid">
+                <div class="form-group full-width">
+                  <label for="fullName" class="form-label">
+                    Nom complet <span class="required">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    id="fullName"
+                    formControlName="fullName"
+                    class="form-input"
+                    [class.error]="userInfoForm.get('fullName')?.invalid && userInfoForm.get('fullName')?.touched"
+                  />
+                  <div *ngIf="userInfoForm.get('fullName')?.invalid && userInfoForm.get('fullName')?.touched" class="error-message">
+                    Le nom complet est requis (minimum 2 caractères)
+                  </div>
+                </div>
+
+                <div class="form-group full-width">
+                  <label for="email" class="form-label">
+                    Adresse e-mail <span class="required">*</span>
+                  </label>
+                  <input
+                    type="email"
+                    id="email"
+                    formControlName="email"
+                    class="form-input"
+                    readonly
+                    style="background-color: #f8fafc; cursor: not-allowed;"
+                  />
+                  <small class="form-hint">L'adresse email ne peut pas être modifiée</small>
+                </div>
+
+                <div class="form-group full-width">
+                  <label for="phone" class="form-label">Téléphone</label>
+                  <input
+                    type="tel"
+                    id="phone"
+                    formControlName="phone"
+                    class="form-input"
+                    placeholder="Ex: +237 6XX XXX XXX"
+                  />
+                </div>
+              </div>
+
+              <div class="form-actions">
+                <button
+                  type="submit"
+                  class="btn-update-info"
+                  [disabled]="userInfoForm.invalid || isUpdatingInfo"
+                >
+                  <span *ngIf="!isUpdatingInfo">Mettre à jour les informations</span>
+                  <span *ngIf="isUpdatingInfo">Mise à jour...</span>
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Section Change Password -->
+          <div class="password-section">
+          <h3 class="section-title">Changer le mot de passe</h3>
+
+          <!-- Messages de succès/erreur pour le mot de passe -->
+          <div *ngIf="passwordSuccess" class="alert alert-success">
+            Mot de passe modifié avec succès !
+          </div>
+          <div *ngIf="passwordError" class="alert alert-error">
+            {{ passwordError }}
+          </div>
+
+          <form [formGroup]="passwordForm" (ngSubmit)="changePassword()">
+            <div class="form-grid">
+              <div class="form-group full-width">
+                <label for="oldPassword" class="form-label">
+                  Ancien mot de passe <span class="required">*</span>
+                </label>
+                <input
+                  type="password"
+                  id="oldPassword"
+                  formControlName="oldPassword"
+                  class="form-input"
+                  [class.error]="passwordForm.get('oldPassword')?.invalid && passwordForm.get('oldPassword')?.touched"
+                />
+                <div *ngIf="passwordForm.get('oldPassword')?.invalid && passwordForm.get('oldPassword')?.touched" class="error-message">
+                  L'ancien mot de passe est requis
+                </div>
+              </div>
+
+              <div class="form-group full-width">
+                <label for="newPassword" class="form-label">
+                  Nouveau mot de passe <span class="required">*</span>
+                </label>
+                <input
+                  type="password"
+                  id="newPassword"
+                  formControlName="newPassword"
+                  class="form-input"
+                  [class.error]="passwordForm.get('newPassword')?.invalid && passwordForm.get('newPassword')?.touched"
+                />
+                <div *ngIf="passwordForm.get('newPassword')?.invalid && passwordForm.get('newPassword')?.touched" class="error-message">
+                  Le nouveau mot de passe doit contenir au moins 6 caractères
+                </div>
+              </div>
+
+              <div class="form-group full-width">
+                <label for="confirmPassword" class="form-label">
+                  Confirmer le nouveau mot de passe <span class="required">*</span>
+                </label>
+                <input
+                  type="password"
+                  id="confirmPassword"
+                  formControlName="confirmPassword"
+                  class="form-input"
+                  [class.error]="passwordForm.get('confirmPassword')?.invalid && passwordForm.get('confirmPassword')?.touched"
+                />
+                <div *ngIf="passwordForm.get('confirmPassword')?.invalid && passwordForm.get('confirmPassword')?.touched" class="error-message">
+                  La confirmation du mot de passe est requise
+                </div>
+                <div *ngIf="passwordForm.hasError('passwordMismatch') && passwordForm.get('confirmPassword')?.touched && passwordForm.get('newPassword')?.touched" class="error-message">
+                  Les mots de passe ne correspondent pas
+                </div>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button
+                type="submit"
+                class="btn-update-info"
+                [disabled]="passwordForm.invalid || isChangingPassword"
+              >
+                <span *ngIf="!isChangingPassword">Changer le mot de passe</span>
+                <span *ngIf="isChangingPassword">Changement en cours...</span>
+              </button>
+            </div>
+          </form>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>

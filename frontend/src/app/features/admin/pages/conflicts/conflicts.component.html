@@ -1,0 +1,301 @@
+<div class="conflicts-page">
+  <!-- Header -->
+  <div class="page-header">
+    <div class="header-actions">
+      <button class="btn btn-secondary" (click)="detectConflicts()" [disabled]="isLoading">
+        <span class="material-symbols-outlined">refresh</span>
+        Détecter les conflits
+      </button>
+      <button class="btn btn-primary" (click)="autoResolveAll()" [disabled]="isLoading || !stats || stats.pendingConflicts === 0">
+        <span class="material-symbols-outlined">auto_fix_high</span>
+        Résoudre tout automatiquement
+      </button>
+    </div>
+  </div>
+
+  <!-- Stats Dashboard -->
+  <div class="stats-dashboard" *ngIf="stats">
+    <div class="stat-card">
+      <div class="stat-header">
+        <p class="stat-label">Total Conflits</p>
+        <span class="stat-icon icon-primary">
+          <span class="material-symbols-outlined">warning</span>
+        </span>
+      </div>
+      <p class="stat-value">{{ stats.totalConflicts }}</p>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-header">
+        <p class="stat-label">En Attente</p>
+        <span class="stat-icon icon-warning">
+          <span class="material-symbols-outlined">error</span>
+        </span>
+      </div>
+      <p class="stat-value">{{ stats.pendingConflicts }}</p>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-header">
+        <p class="stat-label">Résolus cette semaine</p>
+        <span class="stat-icon icon-success">
+          <span class="material-symbols-outlined">check_circle</span>
+        </span>
+      </div>
+      <p class="stat-value">{{ stats.resolvedThisWeek }}</p>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-header">
+        <p class="stat-label">Détectés cette semaine</p>
+        <span class="stat-icon icon-info">
+          <span class="material-symbols-outlined">trending_up</span>
+        </span>
+      </div>
+      <p class="stat-value">{{ stats.detectedThisWeek }}</p>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="conflicts-container">
+    
+    <!-- Left Panel: Conflicts List -->
+    <div class="conflicts-list-panel">
+      
+      <!-- Search and Filters -->
+      <div class="search-filters">
+        <div class="search-box">
+          <span class="search-icon">
+            <span class="material-symbols-outlined">search</span>
+          </span>
+          <input 
+            type="text" 
+            class="search-input" 
+            placeholder="Rechercher un enseignant, un cours..."
+            [(ngModel)]="searchQuery"
+            (ngModelChange)="onSearchChange()"
+          />
+        </div>
+
+        <div class="filters-row">
+          <select class="filter-select" [(ngModel)]="selectedType" (ngModelChange)="onFilterChange()">
+            <option value="all">Type de conflit</option>
+            <option value="ROOM_OVERLAP">Conflit de Salle</option>
+            <option value="TEACHER_OVERLAP">Conflit Enseignant</option>
+            <option value="STUDENT_GROUP_OVERLAP">Conflit de Groupe</option>
+            <option value="ROOM_CAPACITY">Capacité Insuffisante</option>
+            <option value="EQUIPMENT_MISSING">Équipement Manquant</option>
+            <option value="TEACHER_UNAVAILABLE">Enseignant Indisponible</option>
+            <option value="TIME_OVERFLOW">Dépassement Horaire</option>
+          </select>
+
+          <select class="filter-select" [(ngModel)]="selectedSeverity" (ngModelChange)="onFilterChange()">
+            <option value="all">Sévérité</option>
+            <option value="CRITICAL">Critique</option>
+            <option value="HIGH">Élevé</option>
+            <option value="MEDIUM">Moyen</option>
+            <option value="LOW">Faible</option>
+          </select>
+
+          <select class="filter-select" [(ngModel)]="selectedStatus" (ngModelChange)="onFilterChange()">
+            <option value="all">Statut</option>
+            <option value="PENDING">En attente</option>
+            <option value="RESOLVED">Résolu</option>
+            <option value="IGNORED">Ignoré</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Conflicts Count -->
+      <div class="conflicts-header">
+        <h3 class="conflicts-count">Conflits Détectés ({{ filteredConflicts.length }})</h3>
+      </div>
+
+      <!-- Conflicts List -->
+      <div class="conflicts-list">
+        <div 
+          *ngFor="let conflict of filteredConflicts" 
+          class="conflict-card"
+          [class.active]="selectedConflict && selectedConflict.conflict.id === conflict.id"
+          (click)="selectConflict(conflict)"
+        >
+          <div class="conflict-card-header">
+            <div class="conflict-icon" [style.background-color]="getSeverityColor(conflict.severity) + '15'">
+              <span class="material-symbols-outlined" [style.color]="getSeverityColor(conflict.severity)">
+                {{ getConflictTypeIcon(conflict.type) }}
+              </span>
+            </div>
+            <div class="conflict-badges">
+              <div class="conflict-badge" [style.background-color]="getConflictTypeColor(conflict.type)">
+                {{ getConflictTypeLabel(conflict.type) }}
+              </div>
+              <div class="severity-badge" [style.background-color]="getSeverityColor(conflict.severity)">
+                {{ getSeverityLabel(conflict.severity) }}
+              </div>
+            </div>
+          </div>
+
+          <h4 class="conflict-title">{{ conflict.title }}</h4>
+          <p class="conflict-meta" *ngIf="conflict.dayOfWeek && conflict.startTime">
+            <span class="material-symbols-outlined">calendar_today</span>
+            {{ conflict.dayOfWeek }} - {{ conflict.startTime }}-{{ conflict.endTime }}
+          </p>
+          <p class="conflict-description">{{ conflict.description }}</p>
+        </div>
+
+        <!-- Empty State -->
+        <div *ngIf="filteredConflicts.length === 0 && !isLoading" class="empty-state">
+          <span class="material-symbols-outlined">check_circle</span>
+          <p>Aucun conflit détecté</p>
+        </div>
+
+        <!-- Loading State -->
+        <div *ngIf="isLoading" class="loading-state">
+          <div class="spinner"></div>
+          <p>Chargement des conflits...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Panel: Conflict Details -->
+    <div class="conflict-details-panel" *ngIf="selectedConflict">
+      
+      <!-- Details Header -->
+      <div class="details-header">
+        <div class="details-title-row">
+          <h2 class="details-title">Détails et Résolution du Conflit</h2>
+          <button class="close-btn" (click)="selectedConflict = null">
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        </div>
+        <p class="details-subtitle">
+          <span class="conflict-badge-inline" [style.background-color]="getConflictTypeColor(selectedConflict.conflict.type)">
+            {{ getConflictTypeLabel(selectedConflict.conflict.type) }}
+          </span>
+          pour "{{ selectedConflict.conflict.title }}" - {{ selectedConflict.conflict.dayOfWeek }} {{ selectedConflict.conflict.startTime }}
+        </p>
+      </div>
+
+      <!-- Visualization Section -->
+      <div class="visualization-section">
+        <h3 class="section-title">Visualisation de l'Emploi du Temps (Salle {{ selectedConflict.affectedCourses[0]?.roomName || 'S102' }})</h3>
+        
+        <div class="timeline-view">
+          <div 
+            *ngFor="let course of selectedConflict.affectedCourses" 
+            class="timeline-block"
+            [style.background-color]="getConflictTypeColor(selectedConflict.conflict.type)"
+          >
+            <div class="timeline-block-header">
+              <span class="material-symbols-outlined error-icon">error</span>
+              <div class="timeline-block-info">
+                <h4>{{ course.name }}</h4>
+                <p>Enseignant: {{ course.teacherName }}</p>
+                <p *ngIf="course.roomName">Filière: {{ course.classNames?.join(', ') || 'Master Info' }}</p>
+              </div>
+            </div>
+            <div class="timeline-block-time">{{ course.startTime }} - {{ course.endTime }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Suggested Solutions -->
+      <div class="solutions-section" *ngIf="!showManualResolution">
+        <h3 class="section-title">Solutions Suggérées</h3>
+        
+        <div class="solutions-grid">
+          <div 
+            *ngFor="let solution of selectedConflict.suggestedSolutions" 
+            class="solution-card"
+            [class.high-priority]="solution.feasibility === 'HIGH'"
+          >
+            <div class="solution-header">
+              <div class="solution-icon">
+                <span class="material-symbols-outlined">{{ getSolutionIcon(solution.type) }}</span>
+              </div>
+              <div class="solution-info">
+                <h4>{{ solution.description }}</h4>
+                <p class="solution-impact">{{ solution.impact }}</p>
+              </div>
+            </div>
+            
+            <div class="solution-details" *ngIf="solution.changes && (solution.changes['newRoomId'] || solution.changes['newTimeSlot'])">
+              <p *ngIf="solution.changes['newRoomId']">
+                <strong>Nouvelle salle:</strong> {{ solution.changes['newRoomId'] }}
+              </p>
+              <p *ngIf="solution.changes['newTimeSlot']">
+                <strong>Nouveau créneau:</strong> {{ solution.changes['newTimeSlot'] }}
+              </p>
+              <p *ngIf="solution.changes['action']">
+                <strong>Action:</strong> {{ solution.changes['action'] }}
+              </p>
+            </div>
+
+            <button class="btn btn-primary" (click)="applySolution(solution)" [disabled]="isLoading">
+              <span class="material-symbols-outlined">check</span>
+              Appliquer
+            </button>
+          </div>
+        </div>
+
+        <!-- Manual Resolution Button -->
+        <div class="manual-resolution-trigger">
+          <button class="btn btn-secondary" (click)="showManualResolutionForm()">
+            <span class="material-symbols-outlined">edit</span>
+            Résolution Manuelle
+          </button>
+          <button class="btn btn-danger" (click)="ignoreConflict()">
+            <span class="material-symbols-outlined">block</span>
+            Ignorer ce conflit
+          </button>
+        </div>
+      </div>
+
+      <!-- Manual Resolution Form -->
+      <div class="manual-resolution-section" *ngIf="showManualResolution">
+        <h3 class="section-title">Résolution Manuelle</h3>
+        <p class="section-subtitle">Modifier manuellement les affectations pour le cours de "{{ selectedConflict.affectedCourses[0]?.name }}".</p>
+        
+        <div class="manual-form">
+          <div class="form-group">
+            <label>Jour</label>
+            <select class="form-input" [(ngModel)]="manualForm.day">
+              <option *ngFor="let day of days" [value]="day">{{ day }}</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Horaire</label>
+            <select class="form-input" [(ngModel)]="manualForm.time">
+              <option *ngFor="let slot of timeSlots" [value]="slot">{{ slot }}</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Salle</label>
+            <select class="form-input" [(ngModel)]="manualForm.room">
+              <option *ngFor="let room of rooms" [value]="room">{{ room }}</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="manual-actions">
+          <button class="btn-cancel" (click)="cancelManualResolution()">Ignorer</button>
+          <button class="btn-validate btn-success" (click)="submitManualResolution()" [disabled]="isLoading">
+            <span class="material-symbols-outlined">check</span>
+            Valider Changement
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Empty State for Details Panel -->
+    <div class="conflict-details-panel empty-details" *ngIf="!selectedConflict && !isLoading">
+      <div class="empty-details-content">
+        <span class="material-symbols-outlined">info</span>
+        <h3>Sélectionnez un conflit</h3>
+        <p>Choisissez un conflit dans la liste pour voir les détails et les solutions suggérées.</p>
+      </div>
+    </div>
+  </div>
+</div>

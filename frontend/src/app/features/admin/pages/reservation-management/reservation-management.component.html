@@ -1,0 +1,328 @@
+<div class="reservations-layout" (click)="closeDropdowns()">
+  <!-- Main Content -->
+  <div class="reservations-container">
+    <main class="reservations-page">
+      <!-- Search and Filters -->
+      <div class="filters-section">
+        <div class="search-wrapper horizontal-actions">
+          <div class="search-box">
+            <div class="search-icon">
+              <span class="material-symbols-outlined">search</span>
+            </div>
+            <input
+              type="text"
+              class="search-input"
+              placeholder="Rechercher par but, notes..."
+              [(ngModel)]="searchTerm"
+              (input)="onSearch()"
+            />
+          </div>
+        </div>
+
+        <div class="filter-buttons" (click)="$event.stopPropagation()">
+          <!-- Dropdown Statut -->
+          <div class="filter-dropdown-wrapper">
+            <button class="filter-btn" (click)="toggleStatusFilter(); $event.stopPropagation()" [class.active]="showStatusDropdown || selectedStatus">
+              <span>Statut: {{ getSelectedStatusLabel() }}</span>
+              <span class="material-symbols-outlined" [class.rotated]="showStatusDropdown">expand_more</span>
+            </button>
+            <div *ngIf="showStatusDropdown" class="dropdown-menu" (click)="$event.stopPropagation()">
+              <button
+                *ngFor="let option of statusOptions"
+                class="dropdown-item"
+                [class.active]="selectedStatus === option.value"
+                (click)="selectStatus(option.value)"
+              >
+                {{ option.label }}
+              </button>
+            </div>
+          </div>
+
+          <!-- Dropdown Salle -->
+          <div class="filter-dropdown-wrapper">
+            <button class="filter-btn" (click)="toggleRoomFilter(); $event.stopPropagation()" [class.active]="showRoomDropdown || selectedRoomId">
+              <span>Salle: {{ getSelectedRoomLabel() }}</span>
+              <span class="material-symbols-outlined" [class.rotated]="showRoomDropdown">expand_more</span>
+            </button>
+            <div *ngIf="showRoomDropdown" class="dropdown-menu" (click)="$event.stopPropagation()">
+              <button
+                *ngFor="let option of roomOptions"
+                class="dropdown-item"
+                [class.active]="selectedRoomId === option.value"
+                (click)="selectRoom(option.value)"
+              >
+                {{ option.label }}
+              </button>
+            </div>
+          </div>
+
+          <button class="reset-btn" (click)="resetFilters(); $event.stopPropagation()">
+            <span class="material-symbols-outlined">filter_list_off</span>
+            <span class="reset-text">Réinitialiser</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Loading State -->
+      <div *ngIf="isLoading" class="loading-container">
+        <div class="loading-spinner">
+          <span class="spinner"></span>
+          <p>Chargement des réservations...</p>
+        </div>
+      </div>
+
+      <!-- Error State -->
+      <div *ngIf="error && !isLoading" class="error-container">
+        <div class="error-message">
+          <span class="material-symbols-outlined">error</span>
+          <p>{{ error }}</p>
+          <button class="retry-btn" (click)="loadReservations()">Réessayer</button>
+        </div>
+      </div>
+
+      <!-- Reservations Table -->
+      <div *ngIf="!isLoading && !error" class="table-container">
+        <div class="table-wrapper">
+          <table class="timora-table">
+            <thead>
+              <tr>
+                <th class="expand-column"></th>
+                <th>Salle</th>
+                <th>Date</th>
+                <th>Heure</th>
+                <th>But</th>
+                <th>Statut</th>
+                <th>Participants</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <ng-container *ngFor="let reservation of paginatedReservations; let i = index">
+                <tr [class.table-row-even]="i % 2 === 0" [class.table-row-odd]="i % 2 === 1" [class.expanded-active]="isRowExpanded(reservation.id || reservation.idDemandeReservation)">
+                  <td class="expand-column">
+                    <button class="expand-btn" (click)="toggleRow(reservation.id || reservation.idDemandeReservation)" [title]="isRowExpanded(reservation.id || reservation.idDemandeReservation) ? 'Réduire' : 'Voir plus'">
+                      <span class="material-symbols-outlined" [class.rotated]="isRowExpanded(reservation.id || reservation.idDemandeReservation)">expand_more</span>
+                    </button>
+                  </td>
+                  <td class="font-medium">{{ getRoomName(reservation.roomId || reservation.salleId) }}</td>
+                  <td class="text-secondary">{{ formatDateOnly(getReservationDate(reservation)) }}</td>
+                  <td class="text-secondary">{{ formatTime(getReservationStartTime(reservation)) }} - {{ formatTime(getReservationEndTime(reservation)) }}</td>
+                  <td class="text-secondary">{{ reservation.purpose || reservation.coursNom || 'N/A' }}</td>
+                  <td>
+                    <span class="status-badge" [ngClass]="getStatusClass(reservation.status || reservation.statut)">
+                      {{ getStatusLabel(reservation.status || reservation.statut) }}
+                    </span>
+                  </td>
+                  <td class="text-secondary">{{ reservation.numberOfParticipants || 0 }}</td>
+                  <td>
+                    <div class="action-buttons">
+                      <button
+                        *ngIf="reservation.status === 'EN_ATTENTE'"
+                        class="action-btn confirm-btn"
+                        title="Confirmer"
+                        (click)="confirmReservation(reservation)"
+                        [disabled]="isLoading"
+                      >
+                        <span class="material-symbols-outlined">check_circle</span>
+                      </button>
+                      <button
+                        *ngIf="reservation.status !== 'ANNULEE'"
+                        class="action-btn cancel-btn"
+                        title="Annuler"
+                        (click)="cancelReservation(reservation)"
+                        [disabled]="isLoading"
+                      >
+                        <span class="material-symbols-outlined">cancel</span>
+                      </button>
+                      <button
+                        class="action-btn edit-btn"
+                        title="Éditer"
+                        (click)="onEditReservation(reservation)"
+                        [disabled]="isLoading"
+                      >
+                        <span class="material-symbols-outlined">edit</span>
+                      </button>
+                      <button
+                        class="action-btn delete-btn"
+                        title="Supprimer"
+                        (click)="onDeleteReservation(reservation)"
+                        [disabled]="isLoading"
+                      >
+                        <span class="material-symbols-outlined">delete</span>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                
+                <!-- Ligne de Détails (Expansion) -->
+                <tr *ngIf="isRowExpanded(reservation.id || reservation.idDemandeReservation)" class="expanded-row">
+                  <td colspan="8">
+                    <div class="elegant-details-view">
+                      <!-- Section: Demandeur & Équipement -->
+                      <div class="details-section">
+                        <div class="details-grid">
+                          <div class="detail-item">
+                            <span class="detail-label">Demandeur</span>
+                            <span class="detail-value">{{ reservation.utilisateurNom || 'Utilisateur inconnu' }}</span>
+                          </div>
+                          
+                          <div class="detail-item" *ngIf="reservation.equipementNom">
+                            <span class="detail-label">Équipement demandé</span>
+                            <div class="detail-value">
+                              <span class="equipment-badge">
+                                <span class="material-symbols-outlined">handyman</span>
+                                {{ reservation.equipementNom }}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <!-- Section: Participants & État -->
+                      <div class="details-section">
+                        <div class="detail-item">
+                          <span class="detail-label">Capacité / Participants</span>
+                          <span class="detail-value">{{ reservation.numberOfParticipants || 0 }} personnes</span>
+                        </div>
+                        <div class="detail-item" *ngIf="reservation.notes">
+                          <span class="detail-label">Notes & Instructions</span>
+                          <span class="detail-value notes">{{ reservation.notes }}</span>
+                        </div>
+                      </div>
+
+                      <!-- Section: Chronologie -->
+                      <div class="details-section">
+                        <div class="detail-item" *ngIf="reservation.createdAt">
+                          <span class="detail-label">Demandé le</span>
+                          <span class="detail-value">{{ formatDate(reservation.createdAt) }}</span>
+                        </div>
+                        <div class="detail-item">
+                          <span class="detail-label">ID Réservation</span>
+                          <span class="detail-value font-mono">{{ reservation.idDemandeReservation || reservation.id }}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              </ng-container>
+
+              <tr *ngIf="paginatedReservations.length === 0 && !isLoading && filteredReservations.length === 0">
+                <td colspan="8" class="no-data">Aucune réservation trouvée</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Pagination -->
+      <div class="timora-pagination" *ngIf="!isLoading && !error && totalReservations > 0">
+        <p class="pagination-info">
+          Affichage de <span>{{ startIndex }}</span> à
+          <span>{{ endIndex }}</span> sur
+          <span>{{ totalReservations }}</span> résultats
+        </p>
+        <nav class="pagination-nav">
+          <button class="page-btn" (click)="previousPage()" [disabled]="currentPage === 1">
+            <span class="material-symbols-outlined">chevron_left</span>
+          </button>
+          <button
+            *ngFor="let page of visiblePages"
+            class="page-btn"
+            [class.active]="page === currentPage"
+            (click)="goToPage(page)"
+          >
+            {{ page }}
+          </button>
+          <button class="page-btn" (click)="nextPage()" [disabled]="currentPage === totalPages">
+            <span class="material-symbols-outlined">chevron_right</span>
+          </button>
+        </nav>
+      </div>
+    </main>
+  </div>
+
+  <!-- Modal d'édition de réservation -->
+  <div *ngIf="showEditModal" class="modal-overlay" (click)="closeEditModal(); closeDropdowns()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <!-- <h2 class="modal-title">Modifier la réservation</h2> -->
+        <button class="modal-close-btn" (click)="closeEditModal()" type="button">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      <form (ngSubmit)="onSubmitEditReservation()" class="modal-form">
+        <!-- Message d'erreur du formulaire -->
+        <div *ngIf="editFormError" class="form-error">
+          <span class="material-symbols-outlined">error</span>
+          <p>{{ editFormError }}</p>
+        </div>
+
+        <!-- Statut -->
+        <div class="form-group">
+          <label for="status" class="form-label">Statut</label>
+          <select
+            id="status"
+            class="form-select"
+            [(ngModel)]="editForm.status"
+            name="status"
+            [disabled]="isSubmittingEdit"
+          >
+            <option value="EN_ATTENTE">En attente</option>
+            <option value="CONFIRME">Confirmé</option>
+            <option value="ANNULEE">Annulé</option>
+            <option value="CONFLIT">Conflit</option>
+          </select>
+        </div>
+
+        <!-- But/Purpose -->
+        <div class="form-group">
+          <label for="purpose" class="form-label">But</label>
+          <input
+            type="text"
+            id="purpose"
+            class="form-input"
+            [(ngModel)]="editForm.purpose"
+            name="purpose"
+            placeholder="But de la réservation"
+            [disabled]="isSubmittingEdit"
+          />
+        </div>
+
+        <!-- Notes -->
+        <div class="form-group">
+          <label for="notes" class="form-label">Notes</label>
+          <textarea
+            id="notes"
+            class="form-textarea"
+            [(ngModel)]="editForm.notes"
+            name="notes"
+            placeholder="Notes supplémentaires"
+            rows="3"
+            [disabled]="isSubmittingEdit"
+          ></textarea>
+        </div>
+
+        <!-- Boutons d'action -->
+        <div class="modal-actions">
+          <button
+            type="button"
+            class="btn btn-secondary"
+            (click)="closeEditModal()"
+            [disabled]="isSubmittingEdit"
+          >
+            Annuler
+          </button>
+          <button
+            type="submit"
+            class="btn btn-primary"
+            [disabled]="isSubmittingEdit"
+          >
+            <span *ngIf="!isSubmittingEdit">Enregistrer</span>
+            <span *ngIf="isSubmittingEdit">Enregistrement...</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

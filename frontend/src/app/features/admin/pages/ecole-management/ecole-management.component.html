@@ -1,0 +1,164 @@
+<div class="ecoles-layout">
+  <!-- Main Content -->
+  <div class="ecoles-container">
+    <main class="ecoles-page">
+      <!-- Page Header with Add Button -->
+
+      <!-- Search -->
+      <div class="filters-section">
+        <div class="search-wrapper horizontal-actions">
+          <!-- Barre de recherche -->
+          <div class="search-box">
+            <div class="search-icon">
+              <span class="material-symbols-outlined">search</span>
+            </div>
+            <input
+              type="text"
+              class="search-input"
+              placeholder="Rechercher par nom d'école..."
+              [(ngModel)]="searchTerm"
+              (input)="onSearch()"
+            />
+          </div>
+
+          <!-- Bouton aligné à droite -->
+          <button class="add-btn" (click)="onAddEcole()">
+            <span class="material-symbols-outlined">add</span>
+            <span>Ajouter une école</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Loading State -->
+      <div *ngIf="isLoading" class="loading-container">
+        <div class="loading-spinner">
+          <span class="spinner"></span>
+          <p>Chargement des écoles...</p>
+        </div>
+      </div>
+
+      <!-- Error State -->
+      <div *ngIf="error && !isLoading" class="error-container">
+        <div class="error-message">
+          <span class="material-symbols-outlined">error</span>
+          <p>{{ error }}</p>
+          <button class="retry-btn" (click)="loadEcoles()">Réessayer</button>
+        </div>
+      </div>
+
+      <!-- Ecoles Table -->
+      <div *ngIf="!isLoading && !error" class="table-container">
+        <div class="table-wrapper">
+          <table class="timora-table">
+            <thead>
+              <tr>
+                <th class="rounded-l-lg">ID</th>
+                <th>Nom de l'École</th>
+                <th>Date de Création</th>
+                <th class="rounded-r-lg text-center">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let ecole of paginatedEcoles; let i = index" [class.table-row-even]="i % 2 === 0" [class.table-row-odd]="i % 2 !== 0">
+                <td class="text-secondary font-mono">{{ ecole.idEcole }}</td>
+                <td class="font-medium">{{ ecole.nomEcole }}</td>
+                <td class="text-secondary">{{ formatDate(ecole.createdAt) }}</td>
+                <td>
+                  <div class="flex justify-center items-center gap-2">
+                    <button
+                      class="action-btn edit-btn"
+                      (click)="onEdit(ecole)"
+                      [disabled]="isLoading"
+                    >
+                      <span class="material-symbols-outlined text-xl">edit</span>
+                    </button>
+                    <button
+                      class="action-btn delete-btn"
+                      (click)="onDelete(ecole)"
+                      [disabled]="isLoading"
+                    >
+                      <span class="material-symbols-outlined text-xl">delete</span>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Empty State -->
+        <div *ngIf="filteredEcoles.length === 0 && !isLoading" class="empty-container">
+          <div class="empty-message">
+            <p>Aucune école trouvée</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pagination -->
+      <div class="timora-pagination" *ngIf="!isLoading && !error && totalEcoles > 0">
+        <p class="pagination-info">
+          Affichage de <span>{{ startIndex }}</span> à
+          <span>{{ endIndex }}</span> sur
+          <span>{{ totalEcoles }}</span> résultats
+        </p>
+        <nav class="pagination-nav">
+          <button class="page-btn" (click)="previousPage()" [disabled]="currentPage === 1">
+            <span class="material-symbols-outlined">chevron_left</span>
+          </button>
+          <button
+            *ngFor="let page of visiblePages"
+            class="page-btn"
+            [class.active]="page === currentPage"
+            (click)="goToPage(page)"
+          >
+            {{ page }}
+          </button>
+          <button class="page-btn" (click)="nextPage()" [disabled]="currentPage === totalPages">
+            <span class="material-symbols-outlined">chevron_right</span>
+          </button>
+        </nav>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- Modal pour Ajouter/Éditer une École -->
+<div *ngIf="showModal" class="modal-overlay" (click)="closeModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <!-- <h2 class="modal-title">{{ editingEcoleId ? 'Modifier l\'école' : 'Ajouter une école' }}</h2> -->
+      <button class="modal-close" (click)="closeModal()">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+
+    <form [formGroup]="ecoleForm" (ngSubmit)="onSubmit()" class="modal-body">
+      <div class="form-group">
+        <label class="form-label">
+          <span class="label-text">Nom de l'école <span class="required">*</span></span>
+        </label>
+        <input
+          type="text"
+          class="form-input"
+          formControlName="nomEcole"
+          placeholder="Ex: Prépa Vogt"
+          [class.border-red-500]="ecoleForm.get('nomEcole')?.invalid && ecoleForm.get('nomEcole')?.touched"
+        />
+        <span *ngIf="ecoleForm.get('nomEcole')?.invalid && ecoleForm.get('nomEcole')?.touched" class="text-red-500 text-xs mt-1">
+          <span *ngIf="ecoleForm.get('nomEcole')?.errors?.['required']">Le nom de l'école est requis</span>
+          <span *ngIf="ecoleForm.get('nomEcole')?.errors?.['minlength']">Le nom doit contenir au moins 2 caractères</span>
+        </span>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeModal()" [disabled]="isSubmitting">
+          Annuler
+        </button>
+        <button type="submit" class="btn btn-primary" [disabled]="isSubmitting || ecoleForm.invalid">
+          <span *ngIf="isSubmitting" class="spinner-small"></span>
+          <span *ngIf="!isSubmitting">{{ editingEcoleId ? 'Modifier' : 'Créer' }}</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

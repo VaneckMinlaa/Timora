@@ -1,0 +1,514 @@
+<div class="rooms-layout" (click)="closeDropdowns()">
+  <!-- Main Content -->
+  <div class="rooms-container">
+    <main class="rooms-page">
+      <!-- Search and Filters -->
+      <div class="filters-section">
+        <div class="search-wrapper horizontal-actions">
+          <!-- Barre de recherche -->
+          <div class="search-box">
+            <div class="search-icon">
+              <span class="material-symbols-outlined">search</span>
+            </div>
+            <input
+              type="text"
+              class="search-input"
+              placeholder="Rechercher par nom, description..."
+              [(ngModel)]="searchTerm"
+              (input)="onSearch()"
+            />
+          </div>
+
+          <!-- Boutons alignés à droite -->
+          <div class="header-actions horizontal-actions">
+            <button class="btn btn-secondary" (click)="openImportModal()">
+              <span class="material-symbols-outlined">upload_file</span>
+              <span>Importer Excel</span>
+            </button>
+            <button class="add-btn" (click)="onAddRoom()">
+              <span class="material-symbols-outlined">add</span>
+              <span>Ajouter une salle</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="filter-buttons" (click)="$event.stopPropagation()">
+          <!-- Dropdown Type -->
+          <div class="filter-dropdown-wrapper">
+            <button class="filter-btn" (click)="toggleTypeFilter(); $event.stopPropagation()" [class.active]="showTypeDropdown || selectedType">
+              <span>Type: {{ getSelectedTypeLabel() }}</span>
+              <span class="material-symbols-outlined" [class.rotated]="showTypeDropdown">expand_more</span>
+            </button>
+            <div *ngIf="showTypeDropdown" class="dropdown-menu" (click)="$event.stopPropagation()">
+              <button
+                *ngFor="let option of typeOptions"
+                class="dropdown-item"
+                [class.active]="selectedType === option.value"
+                (click)="selectType(option.value)"
+              >
+                {{ option.label }}
+              </button>
+            </div>
+          </div>
+
+          <!-- Dropdown École -->
+          <div class="filter-dropdown-wrapper">
+            <button class="filter-btn" (click)="toggleSchoolFilter(); $event.stopPropagation()" [class.active]="showSchoolDropdown || selectedSchool">
+              <span>École: {{ getSelectedSchoolLabel() }}</span>
+              <span class="material-symbols-outlined" [class.rotated]="showSchoolDropdown">expand_more</span>
+            </button>
+            <div *ngIf="showSchoolDropdown" class="dropdown-menu" (click)="$event.stopPropagation()">
+              <button
+                *ngFor="let option of schoolOptions"
+                class="dropdown-item"
+                [class.active]="selectedSchool === option.value"
+                (click)="selectSchool(option.value)"
+              >
+                {{ option.label }}
+              </button>
+            </div>
+          </div>
+
+          <!-- Dropdown Capacité -->
+          <div class="filter-dropdown-wrapper">
+            <button class="filter-btn" (click)="toggleCapacityFilter(); $event.stopPropagation()" [class.active]="showCapacityDropdown || selectedCapacity">
+              <span>Capacité: {{ getSelectedCapacityLabel() }}</span>
+              <span class="material-symbols-outlined" [class.rotated]="showCapacityDropdown">expand_more</span>
+            </button>
+            <div *ngIf="showCapacityDropdown" class="dropdown-menu" (click)="$event.stopPropagation()">
+              <button
+                *ngFor="let option of capacityOptions"
+                class="dropdown-item"
+                [class.active]="selectedCapacity === option.value"
+                (click)="selectCapacity(option.value)"
+              >
+                {{ option.label }}
+              </button>
+            </div>
+          </div>
+
+
+          <button class="reset-btn" (click)="resetFilters(); $event.stopPropagation()">
+            <span class="material-symbols-outlined">filter_list_off</span>
+            <span class="reset-text">Réinitialiser</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Loading State -->
+      <div *ngIf="isLoading" class="loading-container">
+        <div class="loading-spinner">
+          <span class="spinner"></span>
+          <p>Chargement des salles...</p>
+        </div>
+      </div>
+
+      <!-- Error State -->
+      <div *ngIf="error && !isLoading" class="error-container">
+        <div class="error-message">
+          <span class="material-symbols-outlined">error</span>
+          <p>{{ error }}</p>
+          <button class="retry-btn" (click)="loadRooms()">Réessayer</button>
+        </div>
+      </div>
+
+      <!-- Rooms Table -->
+      <div *ngIf="!isLoading && !error" class="table-container">
+        <div class="table-wrapper">
+          <table class="timora-table">
+            <thead>
+              <tr>
+                <th class="expand-column"></th>
+                <th>ID</th>
+                <th>NOM</th>
+                <th>TYPE</th>
+                <th>CAPACITÉ</th>
+                <th>DISPONIBILITÉ</th>
+                <th>DATE DE CRÉATION</th>
+                <th>ACTIONS</th>
+              </tr>
+            </thead>
+            <tbody>
+              <ng-container *ngFor="let room of paginatedRooms; let i = index">
+                <tr 
+                  [class.table-row-even]="i % 2 === 0" 
+                  [class.table-row-odd]="i % 2 === 1"
+                  [class.row-expanded]="expandedRoomId === (room.id || room.idSalle)"
+                  (click)="toggleRow(room)"
+                  class="clickable-row"
+                >
+                <td class="expand-cell">
+                  <span class="material-symbols-outlined expand-icon" [class.rotated]="expandedRoomId === (room.id || room.idSalle)">
+                    chevron_right
+                  </span>
+                </td>
+                <td class="text-secondary font-mono">{{ room.idSalle || room.id || 'N/A' }}</td>
+                <td class="font-medium">{{ room.name || room.nomsalle || 'N/A' }}</td>
+                <td class="text-secondary">
+                  <span *ngIf="room.typeSalle">{{ getTypeSalleLabel(room.typeSalle) }}</span>
+                  <span *ngIf="!room.typeSalle">N/A</span>
+                </td>
+                <td class="text-secondary">{{ room.capacity || room.capacite || 0 }}</td>
+                <td>
+                  <span class="status-badge" [class.status-active]="room.isAvailable !== false" [class.status-inactive]="room.isAvailable === false">
+                    {{ room.isAvailable !== false ? 'Disponible' : 'Indisponible' }}
+                  </span>
+                </td>
+                <td class="text-secondary">{{ formatDate(room.createdAt) }}</td>
+                <td>
+                  <div class="action-buttons">
+                    <button
+                      class="action-btn edit-btn"
+                      title="Éditer"
+                      (click)="$event.stopPropagation(); onEditRoom(room)"
+                      [disabled]="isLoading"
+                    >
+                      <span class="material-symbols-outlined">edit</span>
+                    </button>
+                    <button
+                      class="action-btn delete-btn"
+                      title="Supprimer"
+                      (click)="$event.stopPropagation(); onDeleteRoom(room)"
+                      [disabled]="isLoading"
+                    >
+                      <span class="material-symbols-outlined">delete</span>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              <tr *ngIf="expandedRoomId === (room.id || room.idSalle)" class="expanded-detail-row">
+                <td colspan="8">
+                  <div class="elegant-details-view">
+                      <!-- Section: Informations Générales -->
+                      <div class="details-section">
+                        <div class="details-grid">
+                          <div class="detail-item">
+                            <span class="detail-label">École</span>
+                            <span class="detail-value">{{ getSchoolLabel(room) }}</span>
+                          </div>
+                          <div class="detail-item">
+                            <span class="detail-label">ID Technique</span>
+                            <span class="detail-value font-mono">{{ room.id || room.idSalle }}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                    <!-- Section: Occupation Actuelle -->
+                    <div class="details-section">
+                      <div class="detail-item">
+                        <span class="detail-label">Type de salle</span>
+                        <span class="detail-value">{{ getTypeSalleLabel(room.typeSalle) }}</span>
+                      </div>
+                      
+                    </div>
+
+                    <!-- Section: Équipements Présents -->
+                    <div class="details-section">
+                      <div class="details-content">
+                        <p *ngIf="expandedRoomEquipments.length === 0" class="empty-detail-text">Aucun équipement répertorié.</p>
+                        <div *ngIf="expandedRoomEquipments.length > 0" class="elegant-equipments-grid">
+                          <div *ngFor="let eq of expandedRoomEquipments" class="elegant-equipment-tag">
+                            <span class="status-dot" [class.status-ok]="eq.statut === 'DISPONIBLE'" [class.status-error]="eq.statut === 'DEFECTUEUX'" [class.status-warning]="eq.statut === 'EN_MAINTENANCE' || eq.statut === 'EN_COUR_D_UTILISATION'"></span>
+                            <span class="eq-name">{{ eq.nom }}</span>
+                            <span class="eq-status">{{ getStatutLabel(eq.statut) }}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="details-content">
+                        <p *ngIf="expandedRoomOccupations.length === 0" class="empty-detail-text">Aucune occupation enregistrée actuellement.</p>
+                        <ul *ngIf="expandedRoomOccupations.length > 0" class="occupations-list">
+                          <li *ngFor="let occ of expandedRoomOccupations">
+                            <span class="teacher">{{ occ.teacher }}</span>
+                            <span class="separator-dot"></span>
+                            <span class="course">{{ occ.course }}</span>
+                          </li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+              </ng-container>
+              <tr *ngIf="paginatedRooms.length === 0 && !isLoading && filteredRooms.length === 0">
+                <td colspan="7" class="no-data">Aucune salle trouvée</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Pagination -->
+      <div class="timora-pagination" *ngIf="!isLoading && !error && totalRooms > 0">
+        <p class="pagination-info">
+          Affichage de <span>{{ startIndex }}</span> à
+          <span>{{ endIndex }}</span> sur
+          <span>{{ totalRooms }}</span> résultats
+        </p>
+        <nav class="pagination-nav">
+          <button class="page-btn" (click)="previousPage()" [disabled]="currentPage === 1">
+            <span class="material-symbols-outlined">chevron_left</span>
+          </button>
+          <button
+            *ngFor="let page of visiblePages"
+            class="page-btn"
+            [class.active]="page === currentPage"
+            (click)="goToPage(page)"
+          >
+            {{ page }}
+          </button>
+          <button class="page-btn" (click)="nextPage()" [disabled]="currentPage === totalPages">
+            <span class="material-symbols-outlined">chevron_right</span>
+          </button>
+        </nav>
+      </div>
+    </main>
+  </div>
+
+  <!-- Modal d'ajout de salle -->
+  <div *ngIf="showAddModal" class="modal-overlay" (click)="closeAddModal(); closeDropdowns()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <!-- <h2 class="modal-title">Ajouter une salle</h2> -->
+        <button class="modal-close-btn" (click)="closeAddModal()" type="button">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      <form (ngSubmit)="onSubmitAddRoom()" class="modal-form">
+        <!-- Message d'erreur du formulaire -->
+        <div *ngIf="formError" class="form-error">
+          <span class="material-symbols-outlined">error</span>
+          <p>{{ formError }}</p>
+        </div>
+
+        <!-- Nom -->
+        <div class="form-group">
+          <label for="name" class="form-label">Nom de la salle <span class="required">*</span></label>
+            <input
+              type="text"
+              id="name"
+              class="form-input"
+              [(ngModel)]="newRoom.name"
+              name="name"
+              placeholder="Ex: Salle 101"
+              required
+              [disabled]="isSubmitting"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="ecole" class="form-label">École </label>
+            <select
+              id="ecole"
+              class="form-input"
+              [(ngModel)]="newRoom.ecole"
+              name="ecole"
+              [disabled]="isSubmitting"
+            >
+              <option value="">Sélectionner une école</option>
+              <option *ngFor="let option of schoolOptions" [value]="option.value" [hidden]="!option.value">
+                {{ option.label }}
+              </option>
+            </select>
+          </div>
+
+        <div class="form-columns">
+          <!-- Colonne 1 -->
+          <div class="form-column">
+            <!-- Capacité -->
+            <div class="form-group">
+              <label for="capacity" class="form-label">Capacité <span class="required">*</span></label>
+              <input
+                type="number"
+                id="capacity"
+                class="form-input"
+                [(ngModel)]="newRoom.capacity"
+                name="capacity"
+                placeholder="50"
+                min="1"
+                required
+                [disabled]="isSubmitting"
+              />
+            </div>
+          </div>
+
+          <!-- Colonne 2 -->
+          <div class="form-column">
+            <!-- Type de salle -->
+            <div class="form-group">
+              <label for="typeSalle" class="form-label">Type de salle <span class="required">*</span></label>
+              <select
+                id="typeSalle"
+                class="form-input"
+                [(ngModel)]="newRoom.typeSalle"
+                name="typeSalle"
+                required
+                [disabled]="isSubmitting"
+              >
+                <option value="COURS">Salle de Cours</option>
+                <option value="TD">Salle TD</option>
+                <option value="AMPHI">Amphithéâtre</option>
+                <option value="LABORATOIRE">Laboratoire</option>
+              </select>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Boutons d'action -->
+        <div class="modal-actions">
+          <button
+            type="button"
+            class="btn btn-secondary"
+            (click)="closeAddModal()"
+            [disabled]="isSubmitting"
+          >
+            Annuler
+          </button>
+          <button
+            type="submit"
+            class="btn btn-primary"
+            [disabled]="isSubmitting"
+          >
+            <span *ngIf="!isSubmitting">Créer la salle</span>
+            <span *ngIf="isSubmitting">Création...</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal d'édition de salle -->
+  <div *ngIf="showEditModal" class="modal-overlay" (click)="closeEditModal(); closeDropdowns()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <!-- <h2 class="modal-title">Modifier la salle</h2> -->
+        <button class="modal-close-btn" (click)="closeEditModal()" type="button">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      <form (ngSubmit)="onSubmitEditRoom()" class="modal-form">
+        <!-- Message d'erreur du formulaire -->
+        <div *ngIf="editFormError" class="form-error">
+          <span class="material-symbols-outlined">error</span>
+          <p>{{ editFormError }}</p>
+        </div>
+
+        <!-- Nom -->
+        <div class="form-group">
+          <label for="editName" class="form-label">Nom de la salle</label>
+            <input
+              type="text"
+              id="editName"
+              class="form-input"
+              [(ngModel)]="editForm.name"
+              name="editName"
+              placeholder="Ex: Salle 101"
+              [disabled]="isSubmittingEdit"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="editEcole" class="form-label">École / Campus</label>
+            <select
+              id="editEcole"
+              class="form-input"
+              [(ngModel)]="editForm.ecole"
+              name="editEcole"
+              [disabled]="isSubmittingEdit"
+            >
+              <option value="">Sélectionner une école</option>
+              <option *ngFor="let option of schoolOptions" [value]="option.value" [hidden]="!option.value">
+                {{ option.label }}
+              </option>
+            </select>
+          </div>
+
+        <div class="form-columns">
+          <!-- Colonne 1 -->
+          <div class="form-column">
+            <!-- Capacité -->
+            <div class="form-group">
+              <label for="editCapacity" class="form-label">Capacité</label>
+              <input
+                type="number"
+                id="editCapacity"
+                class="form-input"
+                [(ngModel)]="editForm.capacity"
+                name="editCapacity"
+                placeholder="50"
+                min="1"
+                [disabled]="isSubmittingEdit"
+              />
+            </div>
+
+            <!-- Type de salle -->
+            <div class="form-group">
+              <label for="editTypeSalle" class="form-label">Type de salle</label>
+              <select
+                id="editTypeSalle"
+                class="form-input"
+                [(ngModel)]="editForm.typeSalle"
+                name="editTypeSalle"
+                [disabled]="isSubmittingEdit"
+              >
+                <option value="COURS">Salle de Cours</option>
+                <option value="TD">Salle TD</option>
+                <option value="AMPHI">Amphithéâtre</option>
+                <option value="LABORATOIRE">Laboratoire</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Colonne 2 -->
+          <div class="form-column">
+            <!-- Disponibilité -->
+            <div class="form-group">
+              <label for="editIsAvailable" class="form-label">Disponibilité</label>
+              <select
+                id="editIsAvailable"
+                class="form-input"
+                [(ngModel)]="editForm.isAvailable"
+                name="editIsAvailable"
+                [disabled]="isSubmittingEdit"
+              >
+                <option [ngValue]="true">Disponible</option>
+                <option [ngValue]="false">Indisponible</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Boutons d'action -->
+        <div class="modal-actions">
+          <button
+            type="button"
+            class="btn btn-secondary"
+            (click)="closeEditModal()"
+            [disabled]="isSubmittingEdit"
+          >
+            Annuler
+          </button>
+          <button
+            type="submit"
+            class="btn btn-primary"
+            [disabled]="isSubmittingEdit"
+          >
+            <span *ngIf="!isSubmittingEdit">Enregistrer</span>
+            <span *ngIf="isSubmittingEdit">Enregistrement...</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+  <!-- Modal d'import Excel -->
+  <app-excel-import
+    #importModalRef
+    importType="rooms"
+    [isOpen]="showImportModal"
+    (closeModal)="showImportModal = false"
+    (fileSelected)="onImportFile($event)"
+  ></app-excel-import>
+
+</div>

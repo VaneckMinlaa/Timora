@@ -1,0 +1,231 @@
+<div class="dashboard-layout">
+    <!-- Main Content -->
+    <div class="dashboard-container">
+      <!-- Main Content -->
+      <main class="dashboard-main">
+      <!-- Welcome Text -->
+
+      <!-- Stats Grid -->
+      <div class="stats-grid">
+        <!-- Taux d'occupation -->
+        <div class="stat-card">
+          <div class="stat-header">
+            <p class="stat-label">Taux d'occupation</p>
+            <span class="stat-icon icon-primary">
+              <span class="material-symbols-outlined">pie_chart</span>
+            </span>
+          </div>
+          <p class="stat-value">{{ stats.occupancyRate }}%</p>
+          <p class="stat-trend trend-up">
+            <span class="material-symbols-outlined">arrow_upward</span>
+            +{{ stats.occupancyTrend }}% vs. hier
+          </p>
+        </div>
+
+        <!-- Conflits -->
+        <div class="stat-card">
+          <div class="stat-header">
+            <p class="stat-label">Conflits cette semaine</p>
+            <span class="stat-icon icon-warning">
+              <span class="material-symbols-outlined">warning</span>
+            </span>
+          </div>
+          <p class="stat-value">{{ stats.weeklyConflicts }}</p>
+          <p class="stat-sublabel" *ngIf="stats.weeklyConflicts > 0">À résoudre</p>
+          <p class="stat-trend" [class.trend-up]="stats.conflictsTrend > 0" [class.trend-down]="stats.conflictsTrend < 0" [class.trend-neutral]="stats.conflictsTrend === 0">
+            <span class="material-symbols-outlined" *ngIf="stats.conflictsTrend > 0">arrow_upward</span>
+            <span class="material-symbols-outlined" *ngIf="stats.conflictsTrend < 0">arrow_downward</span>
+            <span *ngIf="stats.conflictsTrend !== 0">{{ stats.conflictsTrend > 0 ? '+' : '' }}{{ stats.conflictsTrend }} vs. semaine dernière</span>
+            <span *ngIf="stats.conflictsTrend === 0">Aucun changement</span>
+          </p>
+        </div>
+
+        <!-- Réservations -->
+        <div class="stat-card">
+          <div class="stat-header">
+            <p class="stat-label">Réservations du jour</p>
+            <span class="stat-icon icon-info">
+              <span class="material-symbols-outlined">event</span>
+            </span>
+          </div>
+          <p class="stat-value">{{ stats.dailyReservations }}</p>
+          <p class="stat-trend trend-down">
+            <span class="material-symbols-outlined">arrow_downward</span>
+            {{ stats.reservationsTrend }}% vs. hier
+          </p>
+        </div>
+
+        <!-- Utilisateurs actifs -->
+        <div class="stat-card">
+          <div class="stat-header">
+            <p class="stat-label">Utilisateurs actifs</p>
+            <span class="stat-icon icon-success">
+              <span class="material-symbols-outlined">group</span>
+            </span>
+          </div>
+          <p class="stat-value">{{ stats.activeUsers }}</p>
+          <p class="stat-trend trend-up">
+            <span class="material-symbols-outlined">arrow_upward</span>
+            +{{ stats.usersTrend }}% ce mois-ci
+          </p>
+        </div>
+      </div>
+
+      <!-- Charts Grid -->
+      <div class="charts-grid">
+        <!-- Bar Chart - Répartition par Type de Salle -->
+        <div class="chart-card chart-card-medium">
+          <div class="chart-header">
+            <h3 class="chart-title">Répartition par Type de Salle</h3>
+            <div class="header-actions-mini">
+              <span class="material-symbols-outlined interactive-icon">expand_more</span>
+            </div>
+          </div>
+          <p class="chart-value">{{ rooms.length }} Salles</p>
+          <div class="chart-meta">
+            <span class="chart-period">Total</span>
+          </div>
+          <div class="bar-chart-container" *ngIf="barChartSeries.length > 0; else noRoomTypesData">
+            <apx-chart
+              [series]="barChartSeries"
+              [chart]="barChartConfig.chart"
+              [plotOptions]="barChartConfig.plotOptions"
+              [colors]="barChartConfig.colors"
+              [xaxis]="barChartConfig.xaxis"
+              [tooltip]="barChartConfig.tooltip"
+              [dataLabels]="barChartConfig.dataLabels"
+              [stroke]="barChartConfig.stroke"
+            ></apx-chart>
+          </div>
+          <ng-template #noRoomTypesData>
+            <div class="chart-empty">
+              <p>Aucune donnée disponible</p>
+            </div>
+          </ng-template>
+        </div>
+
+        <!-- Donut Chart - Utilisation par Type de Salle -->
+        <div class="chart-card chart-card-small">
+          <div class="chart-header">
+            <h3 class="chart-title">Utilisation par Type de Salle</h3>
+            <div class="header-actions-mini">
+              <span class="material-symbols-outlined interactive-icon">expand_more</span>
+            </div>
+          </div>
+          <div class="donut-chart-container" *ngIf="donutChartSeries.length > 0">
+            <apx-chart
+              [series]="donutChartSeries"
+              [chart]="donutChartConfig.chart"
+              [colors]="donutChartConfig.colors"
+              [plotOptions]="donutChartConfig.plotOptions"
+              [dataLabels]="donutChartConfig.dataLabels"
+              [stroke]="donutChartConfig.stroke"
+              [legend]="donutChartConfig.legend"
+            ></apx-chart>
+          </div>
+          <div *ngIf="donutChartSeries.length === 0" class="chart-empty">
+            <p>Aucune donnée disponible</p>
+          </div>
+          <!-- Custom Legend matching the screenshot: dot, text, and percentage on right -->
+          <div class="donut-legend custom-legend" *ngIf="donutChartSeries.length > 0" style="margin-top: -20px;">
+            <div class="legend-item" *ngFor="let label of donutChartLabels; let i = index" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 13px; font-weight: 500;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                 <div class="legend-color" [style.background-color]="donutChartConfig.colors[i]" style="width: 8px; height: 8px; border-radius: 50%;"></div>
+                 <span class="legend-text" style="color: #4b5563;">{{ label }}</span>
+              </div>
+              <span class="legend-value" style="font-weight: 700; color: #111827;">{{ donutChartSeries[i] }}%</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Area Chart - Taux d'Occupation Journalier -->
+        <div class="chart-card chart-card-full" style="padding-bottom: 0;">
+          <div class="chart-header">
+            <h3 class="chart-title">Taux d'Occupation Journalier</h3>
+            <div class="header-actions-mini">
+              <span class="material-symbols-outlined interactive-icon">expand_more</span>
+            </div>
+          </div>
+          <p class="chart-value">Cette Semaine</p>
+          <div class="chart-meta">
+            <span class="chart-period">Réservations par créneau horaire</span>
+          </div>
+          <div class="area-chart-container" *ngIf="areaChartSeries.length > 0" style="margin-top: 20px;">
+            <apx-chart
+              [series]="areaChartSeries"
+              [chart]="areaChartConfig.chart"
+              [colors]="areaChartConfig.colors"
+              [fill]="areaChartConfig.fill"
+              [stroke]="areaChartConfig.stroke"
+              [dataLabels]="areaChartConfig.dataLabels"
+              [xaxis]="areaChartConfig.xaxis"
+              [yaxis]="areaChartConfig.yaxis"
+              [grid]="areaChartConfig.grid"
+            ></apx-chart>
+          </div>
+          <div *ngIf="areaChartSeries.length === 0" class="chart-empty">
+            <p>Aucune donnée disponible</p>
+          </div>
+        </div>
+      </div>
+
+
+      <!-- Content Grid -->
+      <div class="content-grid">
+        <!-- Conflicts Table -->
+        <div class="conflicts-card">
+          <div class="card-header">
+            <h3 class="card-title">Conflits d'horaires</h3>
+            <a [routerLink]="['/admin/conflicts']" class="view-all-link">
+              Voir tous les conflits
+              <span class="material-symbols-outlined">arrow_forward</span>
+            </a>
+          </div>
+          <div class="table-wrapper">
+            <div *ngIf="stats.weeklyConflicts === 0" class="empty-state">
+              <span class="material-symbols-outlined">check_circle</span>
+              <p>Aucun conflit d'horaire cette semaine</p>
+            </div>
+            <div *ngIf="stats.weeklyConflicts > 0" class="conflicts-summary">
+              <p class="summary-text">
+                <span class="material-symbols-outlined">info</span>
+                {{ stats.weeklyConflicts }} conflit(s) détecté(s) cette semaine. 
+                Consultez la page de gestion des conflits pour les résoudre.
+              </p>
+              <a [routerLink]="['/admin/conflicts']" class="btn btn-primary">
+                Gérer les conflits
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="quick-actions">
+          <a class="action-card" [routerLink]="['/admin/rooms']">
+            <div class="action-content">
+              <h3 class="action-title">Gérer les Salles</h3>
+              <p class="action-description">Ajouter, modifier ou supprimer</p>
+            </div>
+            <span class="material-symbols-outlined action-arrow">arrow_forward_ios</span>
+          </a>
+
+          <a class="action-card" [routerLink]="['/admin/courses']">
+            <div class="action-content">
+              <h3 class="action-title">Gérer les Cours</h3>
+              <p class="action-description">Consulter et administrer</p>
+            </div>
+            <span class="material-symbols-outlined action-arrow">arrow_forward_ios</span>
+          </a>
+
+          <a class="action-card action-card-primary" [routerLink]="['/admin/schedule']">
+            <div class="action-content">
+              <h3 class="action-title">Voir l'emploi du temps</h3>
+              <p class="action-description">Calendrier global</p>
+            </div>
+            <span class="material-symbols-outlined action-arrow">arrow_forward_ios</span>
+          </a>
+        </div>
+      </div>
+    </main>
+    </div>
+  </div>

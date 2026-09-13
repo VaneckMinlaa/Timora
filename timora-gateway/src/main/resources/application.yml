@@ -1,0 +1,129 @@
+spring:
+  application:
+    name: api-gateway
+  config:
+    import: "optional:configserver:"
+  cloud:
+    config:
+      enabled: false
+      import-check:
+        enabled: false
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: false
+      loadbalancer:
+        cache:
+          enabled: true
+          ttl: 5s
+          capacity: 256
+        retry:
+          enabled: false
+      routes:
+        # Auth Service Routes
+        - id: auth-service
+          uri: lb://TIMORA-AUTH-SERVICE
+          predicates:
+            - Path=/api/auth/**
+        
+        # User Service Routes
+        - id: user-service
+          uri: lb://TIMORA-USER-SERVICE
+          predicates:
+            - Path=/api/users/**, /api/students/**
+        
+        # Notification Service Routes
+        - id: notification-service
+          uri: lb://TIMORA-NOTIFICATION-SERVICE
+          predicates:
+            - Path=/api/notifications/**
+        
+        # Room Service Routes
+        - id: room-service
+          uri: lb://TIMORA-ROOM-SERVICE
+          predicates:
+            - Path=/api/rooms/**
+        
+        # Equipment Service Routes (géré par Room Service)
+        - id: equipment-service
+          uri: lb://TIMORA-ROOM-SERVICE
+          predicates:
+            - Path=/api/equipements/**
+        
+        # Reservation Service Routes
+        - id: reservation-service
+          uri: lb://TIMORA-RESERVATION-SERVICE
+          predicates:
+            - Path=/api/reservations/**
+        
+        # Schedule Service Routes
+        - id: schedule-service
+          uri: lb://TIMORA-SCHEDULE-SERVICE
+          predicates:
+            - Path=/api/schedules/**
+        
+        # Conflict Management Routes (Schedule Service)
+        - id: conflict-service
+          uri: lb://TIMORA-SCHEDULE-SERVICE
+          predicates:
+            - Path=/api/conflicts/**
+        
+        # Reporting Service Routes
+        - id: reporting-service
+          uri: lb://TIMORA-REPORTING-SERVICE
+          predicates:
+            - Path=/api/reports/**
+        
+        # Integration Service Routes
+        - id: integration-service
+          uri: lb://TIMORA-INTEGRATION-SERVICE
+          predicates:
+            - Path=/api/integration/**
+      
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowed-origin-patterns: "*"
+            allowed-methods: "*"
+            allowed-headers: "*"
+            allow-credentials: true
+            max-age: 3600
+  codec:
+    max-in-memory-size: 16MB
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_SERVER_URL:http://localhost:8761/eureka}
+    fetch-registry: true
+    register-with-eureka: true
+    registry-fetch-interval-seconds: 5
+    initial-instance-info-replication-interval-seconds: 5
+    instance-info-replication-interval-seconds: 10
+  instance:
+    prefer-ip-address: true
+    lease-renewal-interval-in-seconds: 10
+    lease-expiration-duration-in-seconds: 30
+
+server:
+  port: ${SERVER_PORT:8080}
+  max-http-header-size: 16MB
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    gateway:
+      enabled: true
+    health:
+      show-details: always
+    info:
+      enabled: true
+  info:
+    app:
+      name: ${spring.application.name}
+      description: API Gateway - Point d'entrée pour tous les microservices
+      version: 0.0.1-SNAPSHOT

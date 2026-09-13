@@ -1,0 +1,320 @@
+<div class="dashboard-layout">
+  <!-- Sidebar -->
+  <app-sidebar></app-sidebar>
+
+  <!-- Main Content -->
+  <div class="dashboard-container">
+    <!-- Main Content -->
+    <main class="dashboard-main-flush">
+      <div class="reservation-page-content">
+        <!-- Unified Header - Flush with top -->
+        <div class="calendar-unified-header" *ngIf="weekDays.length > 0">
+          <div class="header-left">
+            <div class="calendar-nav-section">
+              <h2 class="calendar-month-title">
+                <span class="month">{{ currentMonth }}</span>
+                <span class="year">{{ currentYear }}</span>
+              </h2>
+              <div class="calendar-nav-buttons">
+                <button class="nav-button prev" (click)="previousWeek()" title="Semaine précédente">
+                  <span class="material-symbols-outlined">chevron_left</span>
+                </button>
+                <button class="nav-button next" (click)="nextWeek()" title="Semaine suivante">
+                  <span class="material-symbols-outlined">chevron_right</span>
+                </button>
+                <button class="nav-button today-btn" (click)="goToToday()">Aujourd'hui</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="header-right">
+            <div class="view-toggle-group">
+              <button class="view-toggle-btn" [class.active]="viewMode === 'day'" (click)="viewMode = 'day'">
+                <span class="material-symbols-outlined">calendar_view_day</span>
+                Jour
+              </button>
+              <button class="view-toggle-btn" [class.active]="viewMode === 'week'" (click)="viewMode = 'week'">
+                <span class="material-symbols-outlined">calendar_view_week</span>
+                Semaine
+              </button>
+              <button class="view-toggle-btn" [class.active]="viewMode === 'month'" (click)="viewMode = 'month'">
+                <span class="material-symbols-outlined">calendar_view_month</span>
+                Mois
+              </button>
+            </div>
+            
+            <button class="btn-reserve-primary" (click)="toggleReservationPanel()">
+              <span class="material-symbols-outlined">{{ showReservationModal ? 'close' : 'add_circle' }}</span>
+              <span>{{ showReservationModal ? 'Fermer' : 'Nouvelle Réservation' }}</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="main-layout-split">
+          <!-- Calendar Area -->
+          <div class="calendar-section" [class.form-open]="showReservationModal">
+            <div *ngIf="weekDays.length === 0" class="loading-message">
+              <p>Chargement du calendrier...</p>
+            </div>
+
+            <div class="calendar-grid-wrapper" *ngIf="weekDays.length > 0">
+              <div class="calendar-grid" [ngClass]="{'grid-day-view': viewMode === 'day', 'grid-week-view': viewMode === 'week'}">
+                <div class="time-header-cell"></div>
+                
+                @for (day of weekDays; track day.date; let i = $index) {
+                  <div class="day-header-cell"
+                       [class.today]="day.isToday"
+                       [style.grid-column]="i + 2">
+                    <span class="day-num">{{ day.date }}</span>
+                    <span class="day-name">{{ day.shortName }}</span>
+                  </div>
+                }
+
+                <div class="time-column">
+                  @for (slot of timeSlots; track slot.start) {
+                    <div class="time-slot-label">
+                      <span class="time">{{ slot.label }}</span>
+                    </div>
+                  }
+                </div>
+                
+                @for (day of weekDays; track day.date; let i = $index) {
+                  <div class="day-column"
+                       [class.today-column]="day.isToday"
+                       [style.grid-column]="i + 2"
+                       [style.grid-row]="'2 / 8'">
+                       
+                    @for (event of getEventsForDay(day); track event.id) {
+                      <div class="calendar-event"
+                           [class.is-pending]="(event.reservation?.status || event.reservation?.statut) === 'EN_ATTENTE'"
+                           [style.top.rem]="getEventTop(event)"
+                           [style.height.rem]="getEventHeight(event)"
+                           [style.background-color]="getColorWithOpacity(event.color, 0.15)"
+                           [style.border-left-color]="event.color"
+                           (click)="onEventClick(event)">
+                        <div class="event-content">
+                          <div class="event-header">
+                            <span class="event-type-dot" [style.background-color]="event.color"></span>
+                            <p class="event-title">{{ event.title }}</p>
+                            <span class="pending-tag" *ngIf="(event.reservation?.status || event.reservation?.statut) === 'EN_ATTENTE'">Attente</span>
+                          </div>
+                          <div class="event-details">
+                            <span class="event-info">
+                              <span class="material-symbols-outlined">meeting_room</span>
+                              {{ event.roomName }}
+                            </span>
+                            <span class="event-info">
+                              <span class="material-symbols-outlined">schedule</span>
+                              {{ event.startTime }} - {{ event.endTime }}
+                            </span>
+                          </div>
+                          <div class="event-footer">
+                            <span class="event-status status-dot" 
+                                  [ngClass]="'status-' + (event.reservation?.status || event.reservation?.statut || 'EN_ATTENTE').toLowerCase()"
+                                  [title]="getStatusLabel(event.reservation?.status || event.reservation?.statut || 'EN_ATTENTE')">
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+            </div>
+          </div>
+
+          <!-- Inline Reservation Panel - Integrated right -->
+          <div class="reservation-side-panel" *ngIf="showReservationModal">
+            <div class="panel-card glass-panel">
+              <div class="panel-body no-header">
+                <div class="panel-stepper">
+                  <div class="form-section">
+                    <h3 class="section-title">1. Informations générales</h3>
+                    <div class="form-group">
+                      <label>Objet de la réservation *</label>
+                      <input type="text" class="form-input" [(ngModel)]="reservationForm.purpose" placeholder="M1 Info - Algorithmique" />
+                    </div>
+                    <div class="form-row">
+                      <div class="form-group">
+                        <label>Date *</label>
+                        <input type="date" class="form-input" [(ngModel)]="reservationForm.date" [min]="getTodayDateString()" (change)="onDateTimeChange()" />
+                      </div>
+                      <div class="form-group">
+                        <label>Participants *</label>
+                        <input type="number" class="form-input" [(ngModel)]="reservationForm.numberOfParticipants" (change)="onDateTimeChange()" min="1" />
+                      </div>
+                    </div>
+                    <div class="form-row">
+                      <div class="form-group">
+                        <label>Début *</label>
+                        <input type="time" class="form-input" [(ngModel)]="reservationForm.startTime" (change)="onDateTimeChange()" />
+                      </div>
+                      <div class="form-group">
+                        <label>Fin *</label>
+                        <input type="time" class="form-input" [(ngModel)]="reservationForm.endTime" (change)="onDateTimeChange()" />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="form-section">
+                    <h3 class="section-title">1.5 Équipement (Optionnel)</h3>
+                    <div class="form-group">
+                      <select class="form-input" [(ngModel)]="reservationForm.equipementId">
+                        <option value="">Aucun équipement</option>
+                        <option *ngFor="let equipement of getEquipementsDisponibles()" [value]="equipement.idEquip">
+                          {{ equipement.nom }} ({{ equipement.categorie }})
+                        </option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div class="form-section">
+                    <div class="section-header-row">
+                      <h3 class="section-title">2. Sélection de la salle</h3>
+                      <div class="assignment-toggle">
+                        <label class="switch">
+                          <input type="checkbox" [(ngModel)]="useAutoAssignment" (change)="toggleAutoAssignment()">
+                          <span class="slider round"></span>
+                        </label>
+                        <span class="toggle-label">{{ useAutoAssignment ? 'Automatique' : 'Manuel' }}</span>
+                      </div>
+                    </div>
+
+                    @if (useAutoAssignment) {
+                      <div class="type-chips">
+                        @for (type of courseTypes; track type.value) {
+                          <div class="type-chip"
+                               [class.selected]="reservationForm.typeCours === type.value"
+                               (click)="reservationForm.typeCours = type.value; onDateTimeChange()">
+                            {{ type.label }}
+                          </div>
+                        }
+                      </div>
+
+                      <div class="suggestions-list" *ngIf="reservationForm.date && reservationForm.startTime">
+                        @if (loadingSuggestions) {
+                          <div class="pulse-loader-container">
+                            <div class="pulse-loader"></div>
+                            <span>Recherche...</span>
+                          </div>
+                        } @else if (roomSuggestions.length > 0) {
+                          <div class="suggestion-cards-compact">
+                            @for (suggestion of roomSuggestions; track suggestion.roomId) {
+                              <div class="suggestion-card-small" 
+                                   [class.selected]="reservationForm.roomId === suggestion.roomId"
+                                   (click)="selectSuggestedRoom(suggestion.roomId)">
+                                <span class="name">{{ suggestion.roomName }}</span>
+                                <span class="cap">{{ suggestion.capacity }}p</span>
+                              </div>
+                            }
+                          </div>
+                        }
+                      </div>
+                    } @else {
+                      <div class="manual-room-list">
+                        @for (room of rooms; track (room.id || room.idSalle)) {
+                          <div class="room-item-compact"
+                               [class.available]="isRoomAvailable(room.id || room.idSalle || '')"
+                               [class.selected]="reservationForm.roomId === (room.id || room.idSalle)"
+                               (click)="isRoomAvailable(room.id || room.idSalle || '') && reservationForm.roomId = (room.id || room.idSalle || '')">
+                            <span class="name">{{ room.name || room.nomsalle }}</span>
+                            <span class="status">{{ isRoomAvailable(room.id || room.idSalle || '') ? 'Dispo' : 'Occupé' }}</span>
+                          </div>
+                        }
+                      </div>
+                    }
+                  </div>
+                </div>
+
+                <div *ngIf="reservationError" class="error-msg">{{ reservationError }}</div>
+              </div>
+
+              <div class="panel-footer">
+                <button class="btn-confirm" 
+                        (click)="createReservation()" 
+                        [disabled]="isLoading || !reservationForm.purpose || !reservationForm.date || (useAutoAssignment ? !reservationForm.typeCours : !reservationForm.roomId)">
+                  {{ isLoading ? 'Envoi...' : 'Réserver' }}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+@if (showDetailsModal) {
+  <div class="modal-overlay" (click)="closeDetailsModal()">
+    <div class="modal-content glass-modal details-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div class="header-content">
+          <span class="material-symbols-outlined header-icon" [style.color]="selectedEvent?.color">event_available</span>
+          <h2 class="modal-title">Détails de la réservation</h2>
+        </div>
+        <button class="modal-close" (click)="closeDetailsModal()">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        @if (selectedEvent) {
+          <div class="event-details-content">
+            <div class="detail-main-info">
+              <h1 class="detail-title">{{ selectedEvent.title }}</h1>
+              <div class="detail-status-badge" [ngClass]="'status-' + (selectedEvent.reservation?.status || selectedEvent.reservation?.statut || 'EN_ATTENTE').toLowerCase()">
+                {{ getStatusLabel(selectedEvent.reservation?.status || selectedEvent.reservation?.statut || 'EN_ATTENTE') }}
+              </div>
+            </div>
+
+            <div class="details-grid">
+              <div class="detail-item">
+                <span class="material-symbols-outlined">meeting_room</span>
+                <div class="item-text">
+                  <label>Salle</label>
+                  <strong>{{ selectedEvent.roomName }}</strong>
+                </div>
+              </div>
+              <div class="detail-item">
+                <span class="material-symbols-outlined">calendar_today</span>
+                <div class="item-text">
+                  <label>Date</label>
+                  <strong>{{ selectedEvent.fullDate | date:'longDate':'':'fr' }}</strong>
+                </div>
+              </div>
+              <div class="detail-item">
+                <span class="material-symbols-outlined">schedule</span>
+                <div class="item-text">
+                  <label>Horaire</label>
+                  <strong>{{ selectedEvent.startTime }} - {{ selectedEvent.endTime }}</strong>
+                </div>
+              </div>
+              <div class="detail-item">
+                <span class="material-symbols-outlined">group</span>
+                <div class="item-text">
+                  <label>Participants</label>
+                  <strong>{{ selectedEvent.reservation?.numberOfParticipants || 0 }} personnes</strong>
+                </div>
+              </div>
+            </div>
+
+            @if (selectedEvent.reservation?.notes) {
+              <div class="detail-section">
+                <h3>Description / Note</h3>
+                <p>{{ selectedEvent.reservation?.notes }}</p>
+              </div>
+            }
+          </div>
+        }
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-secondary" (click)="closeDetailsModal()">Fermer</button>
+        <button class="btn-danger-outline" (click)="deleteReservation(selectedEvent?.id)">
+          <span class="material-symbols-outlined">delete</span>
+          Annuler la réservation
+        </button>
+      </div>
+    </div>
+  </div>
+}

@@ -1,0 +1,18 @@
+package com.iusjc.timora.user.dto;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+/**
+ * DTO pour la réponse de réinitialisation de mot de passe
+ */
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class ResetPasswordResponse {
+    private String message;
+    private String newPassword;
+}

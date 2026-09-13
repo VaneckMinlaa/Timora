@@ -1,0 +1,6 @@
+# Ignorer le fichier .env qui contient des secrets
+.env
+
+# Mais garder le template
+!.env.example
+

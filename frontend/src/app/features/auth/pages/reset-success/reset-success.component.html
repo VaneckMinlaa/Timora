@@ -1,0 +1,53 @@
+<div class="reset-success-container">
+  <div class="reset-success-card">
+    <!-- Success Icon -->
+    <div class="icon-wrapper">
+      <span class="material-symbols-outlined">check_circle</span>
+    </div>
+
+    <!-- Header -->
+    <div class="header">
+      <h1 class="title">Mot de passe réinitialisé !</h1>
+      <p class="subtitle">
+        Votre mot de passe a été réinitialisé avec succès.<br>
+        Un email contenant votre nouveau mot de passe a été envoyé à<br>
+        <strong>{{ email }}</strong>
+      </p>
+    </div>
+
+    <!-- Instructions -->
+    <div class="instructions">
+      <div class="instruction-item">
+        <span class="step-number">1</span>
+        <p>Consultez votre boîte email</p>
+      </div>
+      <div class="instruction-item">
+        <span class="step-number">2</span>
+        <p>Copiez le nouveau mot de passe</p>
+      </div>
+      <div class="instruction-item">
+        <span class="step-number">3</span>
+        <p>Connectez-vous avec vos nouveaux identifiants</p>
+      </div>
+    </div>
+
+    <!-- Info Box -->
+    <div class="info-box">
+      <span class="material-symbols-outlined">info</span>
+      <p>
+        Pour des raisons de sécurité, nous vous recommandons de changer ce mot de passe 
+        lors de votre première connexion.
+      </p>
+    </div>
+
+    <!-- Countdown -->
+    <div class="countdown">
+      <p>Redirection automatique dans <strong>{{ countdown }}</strong> secondes...</p>
+    </div>
+
+    <!-- Login Button -->
+    <button type="button" class="login-btn" (click)="goToLogin()">
+      Se connecter maintenant
+    </button>
+  </div>
+</div>

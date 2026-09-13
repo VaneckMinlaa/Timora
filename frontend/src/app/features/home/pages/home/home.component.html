@@ -1,0 +1,44 @@
+<div class="landing-page" [attr.data-theme]="isDarkMode ? 'dark' : 'light'">
+  <!-- Header / Navigation -->
+  
+
+  <!-- Hero Section -->
+  <main class="hero-section" id="home">
+    <div class="hero-container">
+      <div class="hero-text-content">
+        <h1 class="hero-title">
+          Welcome <span class="title-accent">To New</span> <span class="handwriting">Semester</span>
+        </h1>
+        
+        <button class="cta-outline" routerLink="/login">Commencer</button>
+
+        <p class="hero-description">
+          Simplifiez la gestion de votre vie académique avec Timora. 
+          Planning intelligent, réservations de salles et suivi en temps réel 
+          pour les étudiants et professeurs.
+        </p>
+
+        <form class="contact-form" (submit)="onSubmit($event)">
+          <div class="form-inputs">
+            <input type="text" placeholder="Name" class="form-input">
+            <input type="email" placeholder="Email" class="form-input">
+          </div>
+          <button type="submit" class="btn-send">Send</button>
+        </form>
+      </div>
+
+      <div class="hero-image-content">
+        
+        <!-- Floating elements (doodles) -->
+        <span class="material-symbols-outlined doodle d1">content_cut</span>
+        <span class="material-symbols-outlined doodle d2">attachment</span>
+        <span class="material-symbols-outlined doodle d3">book</span>
+        <span class="material-symbols-outlined doodle d4">edit</span>
+      </div>
+    </div>
+  </main>
+
+  <!-- Background Decorative Shapes -->
+  <div class="bg-shape shape-1"></div>
+  <div class="bg-shape shape-2"></div>
+</div>

@@ -1,0 +1,29 @@
+{
+  "/api/conflicts": {
+    "target": "http://localhost:8085",
+    "secure": false,
+    "changeOrigin": true,
+    "logLevel": "debug"
+  },
+  "/api": {
+    "target": "http://localhost:8080",
+    "secure": false,
+    "changeOrigin": true,
+    "pathRewrite": {
+      "^/api": "/api"
+    },
+    "logLevel": "debug"
+  },
+  "/actuator": {
+    "target": "http://localhost:8080",
+    "secure": false,
+    "changeOrigin": true,
+    "logLevel": "debug"
+  },
+  "/eureka": {
+    "target": "http://localhost:8761",
+    "secure": false,
+    "changeOrigin": true,
+    "logLevel": "debug"
+  }
+}

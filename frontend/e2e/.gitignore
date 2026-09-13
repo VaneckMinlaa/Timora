@@ -1,0 +1,16 @@
+# Rapports de tests
+reports/
+coverage/
+
+# Captures d'écran
+screenshots/
+*.png
+*.jpg
+
+# Logs
+*.log
+
+# Fichiers temporaires
+*.tmp
+*.temp
+

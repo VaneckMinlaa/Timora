@@ -1,0 +1,310 @@
+<div class="courses-layout">
+  <div class="courses-container">
+    <main class="courses-page">
+      <!-- Page Header -->
+      <!-- Page Header -->
+      <header class="page-header">
+      </header>
+
+      <!-- Form Section -->
+      <section class="form-section">
+        <div class="section-header">
+        </div>
+
+        <form (ngSubmit)="onSubmit()" [formGroup]="courseForm">
+          <div class="course-form-grid">
+            <!-- Course Name -->
+            <div class="form-group">
+              <label class="form-label">Intitulé du cours</label>
+              <input
+                type="text"
+                class="form-input"
+                [class.input-error]="courseForm.get('nom')?.invalid && courseForm.get('nom')?.touched"
+                placeholder="Ex: Architecture logicielle"
+                formControlName="nom"
+              />
+              <span *ngIf="courseForm.get('nom')?.invalid && courseForm.get('nom')?.touched" class="error-text">
+                Ce champ est obligatoire
+              </span>
+            </div>
+
+            <!-- UE Selection -->
+            <div class="form-group">
+              <label class="form-label">Unité d'Enseignement (UE)</label>
+              <select class="form-select" formControlName="codeUE">
+                <option value="">Sélectionner une UE</option>
+                <option *ngFor="let ue of ues" [value]="ue.codeUE">
+                  {{ ue.codeUE }} - {{ ue.nomUE }}
+                </option>
+              </select>
+            </div>
+
+            <!-- Volume Horaire -->
+            <div class="form-group">
+              <label class="form-label">Volume Horaire</label>
+              <input
+                type="number"
+                class="form-input"
+                placeholder="Ex: 45"
+                formControlName="volumeHoraire"
+              />
+            </div>
+
+            <!-- Credits -->
+            <div class="form-group">
+              <label class="form-label">Nombre de Crédits</label>
+              <input
+                type="number"
+                class="form-input"
+                [class.input-error]="courseForm.get('credits')?.invalid && courseForm.get('credits')?.touched"
+                placeholder="Ex: 3"
+                formControlName="credits"
+              />
+              <span *ngIf="courseForm.get('credits')?.invalid && courseForm.get('credits')?.touched" class="error-text">
+                Le nombre de crédits est obligatoire
+              </span>
+            </div>
+
+            <!-- Teacher -->
+            <div class="form-group">
+              <label class="form-label">Enseignant Responsable</label>
+              <select
+                class="form-select"
+                [class.input-error]="courseForm.get('enseignantId')?.invalid && courseForm.get('enseignantId')?.touched"
+                formControlName="enseignantId"
+              >
+                <option value="">Choisir un enseignant</option>
+                <option *ngFor="let teacher of teachers" [value]="teacher.id">
+                  {{ teacher.firstName }} {{ teacher.lastName }}
+                </option>
+              </select>
+            </div>
+
+            <!-- Filiere -->
+            <div class="form-group">
+              <label class="form-label">Filière</label>
+              <select class="form-select" formControlName="filiereId" (change)="onFiliereChange()">
+                <option value="">Sélectionner la filière</option>
+                <option *ngFor="let filiere of filieres" [value]="filiere.idFiliere">
+                  {{ filiere.nom }}
+                </option>
+              </select>
+            </div>
+
+            <!-- Niveau -->
+            <div class="form-group">
+              <label class="form-label">Niveau d'études</label>
+              <select class="form-select" formControlName="niveau">
+                <option value="">Sélectionner le niveau</option>
+                <option *ngFor="let niveau of niveaux" [value]="niveau">
+                  {{ niveau }}
+                </option>
+              </select>
+            </div>
+
+            <!-- Type -->
+            <div class="form-group">
+              <label class="form-label">Type de session</label>
+              <select class="form-select" formControlName="type">
+                <option value="">Choisir un type</option>
+                <option value="COURS_MAGISTRAL">Cours Magistral (CM)</option>
+                <option value="TD">Travaux Dirigés (TD)</option>
+                <option value="TP">Travaux Pratiques (TP)</option>
+              </select>
+            </div>
+
+            <!-- Semestre -->
+            <div class="form-group">
+              <label class="form-label">Semestre</label>
+              <select class="form-select" formControlName="semestre">
+                <option value="">Choisir un semestre</option>
+                <option value="SEMESTRE_1">Semestre 1</option>
+                <option value="SEMESTRE_2">Semestre 2</option>
+              </select>
+              <span *ngIf="courseForm.get('semestre')?.invalid && courseForm.get('semestre')?.touched" class="error-text">
+                Le semestre est obligatoire
+              </span>
+            </div>
+
+            <!-- Classes Selection -->
+            <div class="form-group">
+              <label class="form-label">Classe(s) concernée(s)</label>
+              <select class="form-select" formControlName="classeIds" multiple style="height: auto; min-height: 100px;">
+                <option *ngFor="let classe of classes" [value]="classe.idClasse">
+                  {{ classe.nom }}
+                </option>
+              </select>
+              <p class="form-hint" *ngIf="classes.length === 0">
+                Sélectionnez d'abord une filière
+              </p>
+            </div>
+
+            <!-- Room -->
+            <div class="form-group">
+              <label class="form-label">Salle (Facultatif)</label>
+              <select class="form-select" formControlName="salleId">
+                <option value="">Attribution automatique</option>
+                <option *ngFor="let room of availableRooms" [value]="room.idSalle">
+                  {{ room.nomsalle }} ({{ room.capacite }} p)
+                </option>
+              </select>
+            </div>
+
+            <!-- Hint -->
+            <div class="form-group" style="justify-content: flex-end;">
+              <p class="form-hint">
+                <span class="material-symbols-outlined" style="font-size: 14px;">info</span>
+                Groupes d'étudiants assignés par filière/niveau.
+              </p>
+            </div>
+          </div>
+
+          <!-- Buttons -->
+          <div class="form-actions">
+            <button type="button" class="btn btn-secondary" (click)="onCancel()">
+              Annuler
+            </button>
+            <button type="submit" class="btn btn-primary" [disabled]="isSubmitting || courseForm.invalid">
+              <span *ngIf="isSubmitting" class="spinner"></span>
+              {{ isSubmitting ? 'Opération...' : (editingCourseId ? 'Enregistrer les modifications' : 'Créer le cours') }}
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <!-- list section -->
+      <section class="list-section">
+        <div class="list-header">
+          <div class="section-header" style="margin-bottom: 0;">
+          </div>
+
+          <div class="search-wrapper">
+            <span class="material-symbols-outlined search-icon">search</span>
+            <input
+              type="text"
+              class="search-input"
+              placeholder="Rechercher un cours..."
+              [(ngModel)]="searchTerm"
+              (input)="filterCourses()"
+            />
+          </div>
+        </div>
+
+        <div class="list-body">
+          <!-- Loading State -->
+          <div *ngIf="isLoading" class="loading-state">
+            <div class="spinner"></div>
+            <p>Chargement des données...</p>
+          </div>
+
+          <!-- Empty State -->
+          <div *ngIf="!isLoading && filteredCourses.length === 0" class="no-data">
+            <span class="material-symbols-outlined no-data-icon">event_busy</span>
+            <p>Aucun cours n'a été programmé pour le moment.</p>
+          </div>
+
+          <!-- Table Content -->
+          <div *ngIf="!isLoading && filteredCourses.length > 0" class="table-container">
+            <table class="timora-table">
+              <thead>
+                <tr>
+                  <th>Intitulé</th>
+                  <th>Enseignant</th>
+                  <th>Structure</th>
+                  <th>Type</th>
+                  <th>Semestre</th>
+                  <th>Crédits</th>
+                  <th>Avancement</th>
+                  <th style="text-align: right;">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let course of paginatedCourses; let i = index">
+                  <td class="font-bold">{{ course.nom }}</td>
+                  <td>
+                    <div class="teacher-cell">
+                      <div class="avatar-circle" [style.background-color]="getTeacherColor(course.enseignantId)">
+                        {{ getTeacherInitials(course.enseignantId) }}
+                      </div>
+                      <span>{{ getTeacherName(course.enseignantId) }}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="filiere-stack">
+                      <span class="font-bold">{{ getFiliereName(course) }}</span>
+                      <span class="text-secondary text-small">{{ getNiveauName(course) }}</span>
+                      <span class="text-secondary text-italic text-smaller">{{ getClasseNames(course) }}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="badge" [ngClass]="{
+                      'badge-blue': course.type === 'COURS_MAGISTRAL',
+                      'badge-emerald': course.type === 'TD' || course.type === 'TP',
+                      'badge-amber': course.type === 'EXAMEN'
+                    }">
+                      {{ getTypeLabel(course.type) }}
+                    </span>
+                  </td>
+                  <td>
+                    <span class="badge badge-outline">
+                      {{ getSemestreLabel(course.semestre) }}
+                    </span>
+                  </td>
+                  <td>
+                    <span class="badge badge-outline">
+                      {{ course.credits || 0 }} pts
+                    </span>
+                  </td>
+                  <td>
+                    <div class="progress-container">
+                      <div class="progress-text">
+                        <span>{{ getVolumeLabel(course) }}</span>
+                        <span class="percent">{{ getProgress(course) }}%</span>
+                      </div>
+                      <div class="progress-bar-bg">
+                        <div class="progress-bar-fill" [style.width.%]="getProgress(course)"></div>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="action-buttons">
+                      <button class="action-btn edit-btn" (click)="onEdit(course)" title="Modifier">
+                        <span class="material-symbols-outlined">edit</span>
+                      </button>
+                      <button class="action-btn delete-btn" (click)="onDelete(course)" title="Supprimer">
+                        <span class="material-symbols-outlined">delete</span>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Pagination -->
+          <footer class="timora-pagination" *ngIf="!isLoading && filteredCourses.length > 0">
+            <p class="pagination-info">
+              Affichage de <span>{{ startIndex }}</span> à <span>{{ endIndex }}</span> sur <span>{{ totalCourses }}</span> cours
+            </p>
+            <div class="pagination-nav">
+              <button class="page-btn" (click)="previousPage()" [disabled]="currentPage === 1">
+                <span class="material-symbols-outlined">chevron_left</span>
+              </button>
+              <button
+                *ngFor="let page of visiblePages"
+                class="page-btn"
+                [class.active]="page === currentPage"
+                (click)="goToPage(page)"
+              >
+                {{ page }}
+              </button>
+              <button class="page-btn" (click)="nextPage()" [disabled]="currentPage === totalPages">
+                <span class="material-symbols-outlined">chevron_right</span>
+              </button>
+            </div>
+          </footer>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>

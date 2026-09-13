@@ -1,0 +1,332 @@
+<div class="structure-layout">
+  <div class="structure-container">
+    <main class="structure-page">
+      <!-- Tabs + Search + Ajouter on same line -->
+      <div class="filters-section">
+        <div class="tab-buttons">
+          <button class="filter-btn" [class.active]="activeTab === 'filieres'" (click)="switchTab('filieres')">
+            <span class="material-symbols-outlined">account_tree</span>
+            <span>Filières</span>
+          </button>
+          <button class="filter-btn" [class.active]="activeTab === 'ues'" (click)="switchTab('ues')">
+            <span class="material-symbols-outlined">book</span>
+            <span>Unités d'Enseignement</span>
+          </button>
+          <button class="filter-btn" [class.active]="activeTab === 'classes'" (click)="switchTab('classes')">
+            <span class="material-symbols-outlined">group_work</span>
+            <span>Groupes / Classes</span>
+          </button>
+          <button class="filter-btn" [class.active]="activeTab === 'niveaux'" (click)="switchTab('niveaux')">
+            <span class="material-symbols-outlined">layers</span>
+            <span>Niveaux d'études</span>
+          </button>
+        </div>
+
+        <div class="search-wrapper horizontal-actions">
+          <div class="search-box">
+            <div class="search-icon">
+              <span class="material-symbols-outlined">search</span>
+            </div>
+            <input
+              type="text"
+              class="search-input"
+              placeholder="Rechercher..."
+              [(ngModel)]="searchTerm"
+            />
+          </div>
+
+          <button class="add-btn" (click)="openAddModal()">
+            <span class="material-symbols-outlined">add</span>
+            <span>Ajouter {{ 
+              activeTab === 'filieres' ? 'une filière' : 
+              activeTab === 'ues' ? 'une UE' : 
+              activeTab === 'classes' ? 'un groupe' : 'un niveau' 
+            }}</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Loading State -->
+      <div *ngIf="isLoading" class="loading-container">
+        <div class="loading-spinner">
+          <span class="spinner"></span>
+          <p>Chargement des données...</p>
+        </div>
+      </div>
+
+      <!-- Tables -->
+      <div *ngIf="!isLoading" class="table-container">
+        <div class="table-wrapper">
+          
+          <!-- Filieres Table -->
+          <table *ngIf="activeTab === 'filieres'" class="timora-table">
+            <thead>
+              <tr>
+                <th>Nom de la filière</th>
+                <th>Description</th>
+                <th>École rattachée</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let filiere of filieres; let i = index" [class.table-row-even]="i % 2 === 0">
+                <td class="font-medium text-primary">{{ filiere.nom }}</td>
+                <td class="text-secondary">{{ filiere.description || '-' }}</td>
+                <td class="text-secondary">{{ getEcoleName(filiere.ecoleId) }}</td>
+                <td>
+                  <div class="action-buttons">
+                    <button class="action-btn edit-btn" (click)="editFiliere(filiere)" title="Modifier">
+                       <span class="material-symbols-outlined">edit</span>
+                    </button>
+                    <button class="action-btn delete-btn" (click)="onDelete(filiere.idFiliere)" title="Supprimer">
+                      <span class="material-symbols-outlined">delete</span>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              <tr *ngIf="filieres.length === 0">
+                <td colspan="4" class="no-data">Aucune filière trouvée</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <!-- UEs Table -->
+          <table *ngIf="activeTab === 'ues'" class="timora-table">
+            <thead>
+              <tr>
+                <th>Code</th>
+                <th>Nom de l'UE</th>
+                <th>Semestre</th>
+                <th>Filière</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let ue of ues; let i = index" [class.table-row-even]="i % 2 === 0">
+                <td class="font-bold text-primary">{{ ue.codeUE }}</td>
+                <td class="font-medium">{{ ue.nomUE }}</td>
+                <td class="text-secondary">{{ getSemestreLabel(ue.semestre) }}</td>
+                <td class="text-secondary">{{ getFiliereName(ue.filiereId) }}</td>
+                <td>
+                  <div class="action-buttons">
+                    <button class="action-btn edit-btn" (click)="editUE(ue)" title="Modifier">
+                       <span class="material-symbols-outlined">edit</span>
+                    </button>
+                    <button class="action-btn delete-btn" (click)="onDelete(ue.idUE)" title="Supprimer">
+                      <span class="material-symbols-outlined">delete</span>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              <tr *ngIf="ues.length === 0">
+                <td colspan="6" class="no-data">Aucune unité d'enseignement trouvée</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <!-- Classes Table -->
+          <table *ngIf="activeTab === 'classes'" class="timora-table">
+            <thead>
+              <tr>
+                <th>Nom du groupe</th>
+                <th>Effectif</th>
+                <th>Filière</th>
+                <th>Niveau</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let cls of classes; let i = index" [class.table-row-even]="i % 2 === 0">
+                <td class="font-medium text-primary">{{ cls.nom }}</td>
+                <td class="text-secondary">{{ cls.effectif }} étudiants</td>
+                <td class="text-secondary">{{ getFiliereName(cls.filiereId) }}</td>
+                <td><span class="status-badge status-active">{{ cls.niveau }}</span></td>
+                <td>
+                  <div class="action-buttons">
+                    <button class="action-btn edit-btn" (click)="editClasse(cls)" title="Modifier">
+                       <span class="material-symbols-outlined">edit</span>
+                    </button>
+                    <button class="action-btn delete-btn" (click)="onDelete(cls.idClasse)" title="Supprimer">
+                      <span class="material-symbols-outlined">delete</span>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              <tr *ngIf="classes.length === 0">
+                <td colspan="5" class="no-data">Aucun groupe trouvé</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <!-- Niveaux List -->
+          <div *ngIf="activeTab === 'niveaux'" class="niveaux-grid-container">
+            <div *ngFor="let niveau of niveaux" class="niveau-card">
+              <div class="niveau-icon">
+                <span class="material-symbols-outlined">layers</span>
+              </div>
+              <div class="niveau-info">
+                <h3>{{ niveau }}</h3>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Modals (matching user-management style) -->
+  <div *ngIf="showModal" class="modal-overlay" (click)="closeModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2 class="modal-title">
+          {{ editingId ? 'Modifier' : 'Ajouter' }} 
+          {{ 
+            activeTab === 'filieres' ? 'la filière' : 
+            activeTab === 'ues' ? 'l\'UE' : 
+            activeTab === 'classes' ? 'le groupe' : 'le niveau' 
+          }}
+        </h2>
+        <button class="modal-close-btn" (click)="closeModal()" type="button">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      <div class="modal-form-container">
+        <!-- Message d'erreur local au besoin -->
+        
+        <!-- Filiere Form -->
+        <form *ngIf="activeTab === 'filieres'" [formGroup]="filiereForm" (ngSubmit)="onSubmit()" class="modal-form">
+          <div class="form-columns">
+            <div class="form-column">
+              <div class="form-group">
+                <label class="form-label">Nom de la filière <span class="required">*</span></label>
+                <input class="form-input" formControlName="nom" placeholder="Ex: Informatique et Système d'Information">
+              </div>
+              <div class="form-group">
+                <label class="form-label">École <span class="required">*</span></label>
+                <select class="form-select" formControlName="ecoleId">
+                  <option value="">Sélectionner une école</option>
+                  <option *ngFor="let ecole of ecoles" [value]="ecole.idEcole">{{ ecole.nomEcole }}</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-column">
+              <div class="form-group">
+                <label class="form-label">Description</label>
+                <textarea class="form-input" formControlName="description" rows="5" placeholder="Brève introduction..."></textarea>
+              </div>
+            </div>
+          </div>
+          <div class="modal-actions">
+            <button type="button" class="btn btn-secondary" (click)="closeModal()">Annuler</button>
+            <button type="submit" class="btn btn-primary" [disabled]="filiereForm.invalid">Enregistrer</button>
+          </div>
+        </form>
+
+        <!-- UE Form -->
+        <form *ngIf="activeTab === 'ues'" [formGroup]="ueForm" (ngSubmit)="onSubmit()" class="modal-form">
+          <div class="form-columns">
+            <div class="form-column">
+              <div class="form-group">
+                <label class="form-label">Code UE <span class="required">*</span></label>
+                <input class="form-input" formControlName="codeUE" placeholder="Ex: INF401">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Nom de l'UE <span class="required">*</span></label>
+                <input class="form-input" formControlName="nomUE" placeholder="Ex: Compilation">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Filière <span class="required">*</span></label>
+                <select class="form-select" formControlName="filiereId">
+                  <option value="">Sélectionner une filière</option>
+                  <option *ngFor="let f of filieres" [value]="f.idFiliere">{{ f.nom }}</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-column">
+              <div class="form-group">
+                <label class="form-label">Nombre de Crédits <span class="required">*</span></label>
+                <input type="number" class="form-input" formControlName="nombreCredit">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Semestre <span class="required">*</span></label>
+                <select class="form-select" formControlName="semestre">
+                  <option value="">Choisir un semestre</option>
+                  <option value="SEMESTRE_1">Semestre 1</option>
+                  <option value="SEMESTRE_2">Semestre 2</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div class="modal-actions">
+            <button type="button" class="btn btn-secondary" (click)="closeModal()">Annuler</button>
+            <button type="submit" class="btn btn-primary" [disabled]="ueForm.invalid">Enregistrer</button>
+          </div>
+        </form>
+
+        <!-- Classe Form -->
+        <form *ngIf="activeTab === 'classes'" [formGroup]="classeForm" (ngSubmit)="onSubmit()" class="modal-form">
+          <div class="form-columns">
+            <div class="form-column">
+              <div class="form-group">
+                <label class="form-label">Nom du groupe <span class="required">*</span></label>
+                <input class="form-input" formControlName="nom" placeholder="Ex: Licence 1 Informatique">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Effectif attendu <span class="required">*</span></label>
+                <input type="number" class="form-input" formControlName="effectif">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Niveau <span class="required">*</span></label>
+                <select class="form-select" formControlName="niveau">
+                  <option value="">Choisir...</option>
+                  <option *ngFor="let n of niveaux" [value]="n">{{ n }}</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-column">
+              <div class="form-group">
+                <label class="form-label">Filière <span class="required">*</span></label>
+                <select class="form-select" formControlName="filiereId">
+                  <option value="">Choisir...</option>
+                  <option *ngFor="let f of filieres" [value]="f.idFiliere">{{ f.nom }}</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">École <span class="required">*</span></label>
+                <select class="form-select" formControlName="ecoleId">
+                  <option value="">Choisir...</option>
+                  <option *ngFor="let e of ecoles" [value]="e.idEcole">{{ e.nomEcole }}</option>
+                </select>
+              </div>
+              <div class="form-group" *ngIf="!editingId">
+                <label class="form-label">Nombre de groupes (Optionnel)</label>
+                <input type="number" class="form-input" formControlName="nombreGroupes" min="1" max="20" placeholder="Ex: 2">
+                <p class="form-hint" *ngIf="classeForm.get('nombreGroupes')?.value > 1">
+                  Ceci générera {{ classeForm.get('nombreGroupes')?.value }} groupes avec un effectif réparti.
+                </p>
+              </div>
+            </div>
+          </div>
+          <div class="modal-actions">
+            <button type="button" class="btn btn-secondary" (click)="closeModal()">Annuler</button>
+            <button type="submit" class="btn btn-primary" [disabled]="classeForm.invalid">Enregistrer</button>
+          </div>
+        </form>
+
+        <!-- Niveau Form -->
+        <form *ngIf="activeTab === 'niveaux'" [formGroup]="niveauForm" (ngSubmit)="onSubmit()" class="modal-form">
+          <div class="form-group">
+            <label class="form-label">Nom du niveau d'étude <span class="required">*</span></label>
+            <input class="form-input" formControlName="nom" placeholder="Ex: Doctorat 1">
+          </div>
+          <div class="modal-actions">
+            <button type="button" class="btn btn-secondary" (click)="closeModal()">Annuler</button>
+            <button type="submit" class="btn btn-primary" [disabled]="niveauForm.invalid">Ajouter</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

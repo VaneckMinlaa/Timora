@@ -1,0 +1,244 @@
+<!-- schedule-management.component.html -->
+<div class="page-container">
+
+  <!-- Filters & Navigation -->
+  <div class="controls-bar">
+    <div class="week-navigation">
+      <div class="view-toggle">
+        <button
+          class="view-btn"
+          [class.active]="viewMode === 'week'"
+          (click)="setViewMode('week')"
+        >
+          <span class="material-symbols-outlined">view_week</span>
+          Semaine
+        </button>
+        <button
+          class="view-btn"
+          [class.active]="viewMode === 'month'"
+          (click)="setViewMode('month')"
+        >
+          <span class="material-symbols-outlined">calendar_month</span>
+          Mois
+        </button>
+      </div>
+
+      <button class="nav-btn" (click)="previousPeriod()">
+        <span class="material-symbols-outlined">chevron_left</span>
+      </button>
+      <div class="week-info">
+        <span class="week-label">{{ viewMode === 'week' ? 'Semaine du' : 'Mois de' }}</span>
+        <span class="week-date">{{ currentPeriodLabel }}</span>
+      </div>
+      <button class="nav-btn" (click)="nextPeriod()">
+        <span class="material-symbols-outlined">chevron_right</span>
+      </button>
+      <button class="today-btn" (click)="goToToday()">Aujourd'hui</button>
+    </div>
+
+    <div class="view-filters">
+      <button class="btn-add-dispo" (click)="openAddDisponibiliteModal()">
+        <span class="material-symbols-outlined">add</span>
+        Ajouter une disponibilité
+      </button>
+      <button class="btn-submit-availabilities" (click)="submitAvailabilities()" *ngIf="viewMode === 'week'" [disabled]="isLoading">
+        <span class="material-symbols-outlined">send</span>
+        <span *ngIf="isLoading">Envoi en cours...</span>
+        <span *ngIf="!isLoading">Envoyer mes disponibilités</span>
+      </button>
+      <!-- <button class="btn-submit-schedule" (click)="submitSchedule()" *ngIf="viewMode === 'week'">
+        <span class="material-symbols-outlined">check_circle</span>
+        Soumettre mon emploi du temps
+      </button> -->
+    </div>
+  </div>
+
+  <!-- Calendar Grid avec créneaux de 2 heures -->
+  <div class="calendar-grid" *ngIf="viewMode === 'week'">
+    <div class="grid-header hour-header">Heure</div>
+    <div class="grid-header" *ngFor="let day of weekDays" [class.today]="day.isToday">
+      {{ day.name }} {{ day.date }}
+    </div>
+
+    <!-- Time slots de 2 heures -->
+    <div class="time-slot-row" *ngFor="let timeSlot of timeSlots">
+      <div class="time-label">{{ timeSlot.start }} - {{ timeSlot.end }}</div>
+      <div class="day-cell" *ngFor="let day of weekDays"
+           (dragover)="onDayDragOver($event, day)"
+           (drop)="onDayDrop($event, day)"
+           (dragleave)="onDayDragLeave($event)">
+        <!-- Afficher les événements pour ce créneau -->
+        <div
+          class="event-card"
+          [class.disponibilite]="event.isDisponibilite"
+          [class.cours]="!event.isDisponibilite"
+          [class.reservation]="isReservationEvent(event)"
+          [class.pending]="isReservationEvent(event) && event.subject === 'EN ATTENTE'"
+          [class.dragging]="draggedEvent?.id === event.id"
+          *ngFor="let event of getEventsForDayAndTimeSlot(day.name, timeSlot)"
+          [style.background-color]="event.color"
+          [style.top.px]="getEventTopInSlot(event, timeSlot)"
+          [style.height.px]="getEventHeightInSlot(event, timeSlot)"
+          (click)="editSchedule(event)"
+          [draggable]="event.isDisponibilite"
+          (dragstart)="onDragStart($event, event)"
+          (dragend)="onDragEnd($event)">
+          
+          <!-- Badge de réservation -->
+          <div class="reservation-badge" *ngIf="isReservationEvent(event)">
+            <span class="material-symbols-outlined">event_available</span>
+            {{ event.subject }}
+          </div>
+
+          <div class="event-time">
+            {{ event.startTime }} - {{ event.endTime }}
+          </div>
+          <div class="event-title" *ngIf="event.isDisponibilite">
+            Disponible
+          </div>
+          <div class="event-title" *ngIf="!event.isDisponibilite">
+            {{ event.subject || event.title }}
+          </div>
+          <div class="event-details" *ngIf="event.isDisponibilite">
+            <span class="material-symbols-outlined">schedule</span>
+            Disponible
+          </div>
+          <div class="event-details" *ngIf="!event.isDisponibilite && event.subject && !isReservationEvent(event)">
+            <span class="material-symbols-outlined">book</span>
+            {{ event.subject }}
+          </div>
+          <div class="event-details" *ngIf="!event.isDisponibilite && event.room">
+            <span class="material-symbols-outlined">meeting_room</span>
+            {{ event.room }}
+          </div>
+          <div class="event-class" *ngIf="!event.isDisponibilite && event.class">{{ event.class }}</div>
+          <!-- Bouton de suppression pour les disponibilités -->
+          <button
+            *ngIf="event.isDisponibilite"
+            class="delete-disponibilite-btn"
+            (click)="deleteDisponibilite(event.id); $event.stopPropagation()"
+            type="button"
+            title="Supprimer cette disponibilité">
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="loading-state">
+    <div class="spinner"></div>
+    <p>Chargement de l'emploi du temps...</p>
+  </div>
+
+  <!-- Error Message -->
+  <div *ngIf="errorMessage" class="error-message">
+    <span class="material-symbols-outlined">error</span>
+    {{ errorMessage }}
+  </div>
+
+  <!-- Modal Disponibilité -->
+  <div *ngIf="showDisponibiliteModal" class="modal-overlay" (click)="closeDisponibiliteModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <!-- <h2 class="modal-title">
+          {{ isEditMode ? 'Modifier la disponibilité' : 'Ajouter une disponibilité' }}
+        </h2> -->
+        <button class="modal-close" (click)="closeDisponibiliteModal()">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      <div class="modal-body">
+
+        <!-- Sélecteur de semaine -->
+        <div class="form-group">
+          <label class="form-label">Semaine cible</label>
+          <div class="week-picker-container">
+            <button type="button" class="nav-btn" (click)="previousModalWeek()">
+              <span class="material-symbols-outlined">chevron_left</span>
+            </button>
+            <div class="week-display" style="flex:1; text-align:center; display:flex; flex-direction:column; align-items:center; justify-content:center; cursor:default;">
+              <span style="font-size:9px; font-weight:700; color:#94a3b8; letter-spacing:0.05em;">SEMAINE DU</span>
+              <span style="font-size:13px; font-weight:700; color:#1e293b;">{{ modalWeekStart }} - {{ modalWeekEnd }}</span>
+            </div>
+            <button type="button" class="nav-btn" (click)="nextModalWeek()">
+              <span class="material-symbols-outlined">chevron_right</span>
+            </button>
+            <button type="button" class="today-btn" (click)="goToModalToday()">Auj.</button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="jour" class="form-label">Jour *</label>
+          <select
+            id="jour"
+            class="form-input"
+            [(ngModel)]="disponibiliteForm.jour"
+          >
+            <option value="">Sélectionner un jour</option>
+            <optgroup label="Jours de la semaine">
+              <option *ngFor="let jour of joursSemaine" [value]="jour">{{ jour }}</option>
+            </optgroup>
+          </select>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="heureDebut" class="form-label">Heure de début *</label>
+            <input
+              type="time"
+              id="heureDebut"
+              class="form-input"
+              min="08:00"
+              max="17:00"
+              [(ngModel)]="disponibiliteForm.heureDebut"
+              (change)="validateAndAdjustHeureDebut()"
+              (input)="validateAndAdjustHeureDebut()"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="heureFin" class="form-label">Heure de fin *</label>
+            <input
+              type="time"
+              id="heureFin"
+              class="form-input"
+              min="08:00"
+              max="17:00"
+              [(ngModel)]="disponibiliteForm.heureFin"
+              (change)="validateAndAdjustHeureFin()"
+              (input)="validateAndAdjustHeureFin()"
+            />
+          </div>
+        </div>
+
+        <div *ngIf="errorMessage" class="form-error">
+          <span class="material-symbols-outlined">error</span>
+          {{ errorMessage }}
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-cancel" (click)="closeDisponibiliteModal()">
+          Annuler
+        </button>
+        <button
+          type="button"
+          class="btn-submit"
+          (click)="submitDisponibiliteForm()"
+          [disabled]="isLoading || !disponibiliteForm.jour || !disponibiliteForm.heureDebut || !disponibiliteForm.heureFin"
+        >
+          <span *ngIf="!isLoading">
+            {{ isEditMode ? 'Modifier' : 'Créer' }}
+          </span>
+          <span *ngIf="isLoading" class="btn-loader">
+            <span class="spinner-small"></span>
+            En cours...
+          </span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

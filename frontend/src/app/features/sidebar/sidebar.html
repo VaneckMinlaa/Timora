@@ -1,0 +1,219 @@
+<aside class="sidebar">
+  <div class="sidebar-content">
+    <!-- Top Section -->
+    <div class="sidebar-top">
+      <!-- Logo et Titre -->
+      <div class="brand-section">
+        <div class="brand-logo" *ngIf="logoUrl"></div>
+        <div class="brand-info">
+          <h1 class="brand-title">Timora</h1>
+          <p class="brand-subtitle">{{ roleLabel }}</p>
+        </div>
+      </div>
+
+      <!-- Navigation -->
+      <nav class="navigation">
+        <!-- Liens pour ADMINISTRATEUR -->
+        <ng-container *ngIf="isAdmin">
+          <a
+            class="nav-link"
+            [routerLink]="['/admin/dashboard']"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{exact: false}"
+          >
+            <span class="material-symbols-outlined">dashboard</span>
+            <p class="nav-text">Tableau de bord</p>
+          </a>
+
+          <a
+            class="nav-link"
+            [routerLink]="['/admin/users']"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{exact: false}"
+          >
+            <span class="material-symbols-outlined">group</span>
+            <p class="nav-text">Gestion des utilisateurs</p>
+          </a>
+
+          <a
+            class="nav-link"
+            [routerLink]="['/admin/students']"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{exact: false}"
+          >
+            <span class="material-symbols-outlined">person</span>
+            <p class="nav-text">Gestion des étudiants</p>
+          </a>
+
+          <a
+            class="nav-link"
+            [routerLink]="['/admin/rooms']"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{exact: false}"
+          >
+            <span class="material-symbols-outlined">meeting_room</span>
+            <p class="nav-text">Gestion des salles</p>
+          </a>
+
+          <a
+            class="nav-link"
+            [routerLink]="['/admin/reservations']"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{exact: false}"
+          >
+            <span class="material-symbols-outlined">event_note</span>
+            <p class="nav-text">Gestion des réservations</p>
+          </a>
+
+          <a
+            class="nav-link"
+            [routerLink]="['/admin/courses']"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{exact: false}"
+          >
+            <span class="material-symbols-outlined">school</span>
+            <p class="nav-text">Gestion des cours</p>
+          </a>
+
+          <a
+            class="nav-link"
+            [routerLink]="['/admin/structure']"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{exact: false}"
+          >
+            <span class="material-symbols-outlined">account_tree</span>
+            <p class="nav-text">Structure académique</p>
+          </a>
+
+          <a
+            class="nav-link"
+            [routerLink]="['/admin/ecoles']"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{exact: false}"
+          >
+            <span class="material-symbols-outlined">account_balance</span>
+            <p class="nav-text">Gestion des écoles</p>
+          </a>
+
+          <a
+            class="nav-link"
+            [routerLink]="['/admin/resources']"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{exact: false}"
+          >
+            <span class="material-symbols-outlined">devices</span>
+            <p class="nav-text">Gestion des ressources</p>
+          </a>
+          <a
+            class="nav-link"
+            [routerLink]="['/admin/schedules']"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{exact: false}"
+          >
+            <span class="material-symbols-outlined">schedule</span>
+            <p class="nav-text">Gestion des emplois du temps</p>
+          </a>
+
+          <a
+            class="nav-link"
+            [routerLink]="['/admin/conflicts']"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{exact: false}"
+          >
+            <span class="material-symbols-outlined">error</span>
+            <p class="nav-text">Conflits</p>
+            <span class="nav-badge" *ngIf="pendingConflictsCount > 0">{{ pendingConflictsCount }}</span>
+          </a>
+        </ng-container>
+
+        <!-- Liens pour ENSEIGNANT -->
+        <ng-container *ngIf="isTeacher">
+          <a
+            class="nav-link"
+            [routerLink]="['/teacher/dashboard']"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{exact: false}"
+          >
+            <span class="material-symbols-outlined">dashboard</span>
+            <p class="nav-text">Tableau de bord</p>
+          </a>
+
+          <a
+            class="nav-link"
+            [routerLink]="['/reservations']"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{exact: false}"
+          >
+            <span class="material-symbols-outlined">event</span>
+            <p class="nav-text">Réservations</p>
+          </a>
+
+          <a
+            class="nav-link"
+            [routerLink]="['/calendar/sync']"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{exact: false}"
+          >
+            <span class="material-symbols-outlined">sync</span>
+            <p class="nav-text">Synchronisation du calendrier</p>
+          </a>
+
+          <a
+            class="nav-link"
+            [routerLink]="['/notifications']"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{exact: false}"
+          >
+            <span class="material-symbols-outlined">notifications</span>
+            <p class="nav-text">Notifications et rappels</p>
+          </a>
+
+          <a
+            class="nav-link"
+            [routerLink]="['/teacher/schedules']"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{exact: false}"
+          >
+            <span class="material-symbols-outlined">schedule</span>
+            <p class="nav-text">Emploi du temps et disponibilité</p>
+          </a>
+        </ng-container>
+      </nav>
+    </div>
+
+    <!-- Bottom Section -->
+    <div class="sidebar-bottom">
+      <a
+        class="nav-link"
+        [routerLink]="['/profile']"
+        routerLinkActive="active"
+        [routerLinkActiveOptions]="{exact: true}"
+      >
+        <span class="material-symbols-outlined">person</span>
+        <p class="nav-text">Profil</p>
+      </a>
+
+      <a
+        class="nav-link"
+        href="#"
+        (click)="onLogout($event)"
+      >
+        <span class="material-symbols-outlined">logout</span>
+        <p class="nav-text">Déconnexion</p>
+      </a>
+    </div>
+  </div>
+</aside>
+
+<!-- Modal de confirmation de déconnexion -->
+<app-confirm-modal
+  [isOpen]="showLogoutModal"
+  title="Déconnexion"
+  message="Êtes-vous sûr de vouloir vous déconnecter ?"
+  confirmText="Déconnexion"
+  cancelText="Annuler"
+  type="info"
+  (confirm)="onLogoutConfirm()"
+  (cancel)="onLogoutCancel()"
+  (close)="showLogoutModal = false"
+></app-confirm-modal>
