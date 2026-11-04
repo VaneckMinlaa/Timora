@@ -70,7 +70,7 @@ flowchart LR
 | Données | PostgreSQL 15 |
 | Messaging | RabbitMQ 3 |
 | Sécurité | JWT, Spring Security, BCrypt, RBAC, HTTPS (Let’s Encrypt) |
-| DevOps | Docker, Docker Compose, Nginx, GitLab CI/CD, Maven, npm |
+| DevOps | Docker, Docker Compose, Nginx, GitHub Actions, Maven, npm |
 | Tests | Karma / Jasmine, Jest, Selenium WebDriver |
 
 ---
@@ -106,7 +106,7 @@ Timora/
 Prérequis : Docker, Docker Compose, 4 Go RAM (8 Go recommandés).
 
 ```bash
-git clone <url-du-depot>
+git clone https://github.com/VaneckMinlaa/Timora.git
 cd Timora
 cp env.example .env
 docker compose up -d --build

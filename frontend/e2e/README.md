@@ -66,7 +66,7 @@ npm run test:e2e
 
 ### En mode CI/CD
 
-Les tests sont automatiquement exécutés dans la pipeline GitLab CI/CD lors des commits et merge requests.
+Les tests sont automatiquement exécutés dans la pipeline GitHub Actions lors des commits et pull requests.
 
 ## Écrire de nouveaux tests
 
